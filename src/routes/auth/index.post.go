@@ -15,11 +15,11 @@ func HandlePost(ctx *fiber.Ctx) error {
 	db := database.UseDb()
 
 	if err := ctx.BodyParser(&request); err != nil {
-		return ctx.Status(fiber.StatusBadRequest).SendString(err.Error())
+		return ctx.Status(fiber.StatusBadRequest).JSON(utils.DefineError(err.Error()))
 	}
 
-	if !request.VerifyTelegramData() {
-		return ctx.Status(fiber.StatusBadRequest).JSON(utils.DefineError("Invalid request body, please try again"))
+	if err := request.VerifyTelegramData(); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(utils.DefineError(err.Error()))
 	}
 
 	var user models.User

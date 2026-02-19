@@ -4,8 +4,12 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
+	"errors"
 	"os"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type TelegramData struct {
@@ -18,44 +22,38 @@ type TelegramData struct {
 	Username  string `json:"username,omitempty"`
 }
 
-func (data *TelegramData) VerifyTelegramData() bool {
-	var (
-		token       = []byte(os.Getenv("TG_TOKEN"))
-		secret      = sha256.Sum256(token)
-		checkString = data.String()
-		authCode    = computeHmac256([]byte(checkString), secret[:])
-		hexAuthCode = hex.EncodeToString(authCode)
-	)
+func (data *TelegramData) VerifyTelegramData() error {
 
-	fmt.Println(data, token, secret, checkString, authCode, hexAuthCode)
-
-	if hexAuthCode != data.Hash {
-		return false
+	check := []string{
+		"auth_date=" + strconv.FormatInt(data.AuthDate, 10),
+		"first_name=" + data.FirstName,
+		"id=" + strconv.FormatInt(data.ID, 10),
 	}
 
-	return true
-}
-
-func (c *TelegramData) String() string {
-	s := fmt.Sprint("auth_date=", c.AuthDate, "\nfirst_name=", c.FirstName, "\nid=", c.ID)
-
-	if c.LastName != "" {
-		s = fmt.Sprint(s, "\nlast_name=", c.LastName)
+	if data.LastName != "" {
+		check = append(check, "last_name="+data.LastName)
+	}
+	if data.Username != "" {
+		check = append(check, "username="+data.Username)
+	}
+	if data.PhotoURL != "" {
+		check = append(check, "photo_url="+data.PhotoURL)
 	}
 
-	if c.PhotoURL != "" {
-		s = fmt.Sprint(s, "\nphoto_url=", c.PhotoURL)
+	sort.Strings(check)
+
+	secret := sha256.Sum256([]byte(os.Getenv("TG_TOKEN")))
+
+	h := hmac.New(sha256.New, secret[:])
+	h.Write([]byte(strings.Join(check, "\n")))
+	calculatedHash := hex.EncodeToString(h.Sum(nil))
+
+	if !hmac.Equal([]byte(calculatedHash), []byte(data.Hash)) {
+		return errors.New("data is NOT from Telegram")
+	}
+	if time.Now().Unix()-data.AuthDate > 86400 {
+		return errors.New("data is outdated")
 	}
 
-	if c.Username != "" {
-		s = fmt.Sprint(s, "\nusername=", c.Username)
-	}
-
-	return s
-}
-
-func computeHmac256(msg []byte, key []byte) []byte {
-	h := hmac.New(sha256.New, key)
-	h.Write(msg)
-	return h.Sum(nil)
+	return nil
 }

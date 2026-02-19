@@ -27,6 +27,7 @@ require (
 )
 
 require (
+	github.com/LipsarHQ/go-telegram-login-widget v0.0.0-20231102112033-ec628cac556e
 	github.com/gofiber/fiber/v2 v2.52.11
 	github.com/gofiber/template/html/v2 v2.1.3
 	github.com/golang-jwt/jwt v3.2.2+incompatible
