@@ -88,6 +88,16 @@ func CompressEvents(data []PixelRequest) []byte {
 	return buffer
 }
 
+func WriteEvent(w *bufio.Writer, payload []byte) error {
+	encoded := utils.Base64Encode(payload)
+	msg := "data: " + encoded + "\n\n"
+	_, err := w.WriteString(msg)
+	if err != nil {
+		return err
+	}
+	return w.Flush()
+}
+
 func HandleSSE(ctx *fiber.Ctx) error {
 	db := database.UseDb()
 
@@ -136,10 +146,9 @@ func HandleSSE(ctx *fiber.Ctx) error {
 		for {
 			select {
 			case payload := <-client.ch:
-				if _, err := w.Write(payload); err != nil {
+				if err := WriteEvent(w, payload); err != nil {
 					return
 				}
-				w.Flush()
 			case <-notify:
 				return
 			}
