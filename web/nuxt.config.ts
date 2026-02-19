@@ -10,6 +10,11 @@ export default defineNuxtConfig({
         plugins: [ tailwindcss() as any ], 
         server: { allowedHosts: ['.tuna.am'] },
     },
+    runtimeConfig: {
+        public: {
+            baseUrl: ''
+        }
+    },
     app: {
         head: {
             title: "xlsft`s pixelbattle",
