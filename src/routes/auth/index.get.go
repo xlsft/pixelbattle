@@ -7,7 +7,7 @@ import (
 )
 
 func HandleGet(ctx *fiber.Ctx) error {
-	user, ok := ctx.Locals("user").(models.User)
+	user, ok := ctx.Locals("user").(models.UserModel)
 
 	if ok == false {
 		return ctx.Status(fiber.StatusUnauthorized).JSON(utils.DefineError("Invalid request body, please try again"))
