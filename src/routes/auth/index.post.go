@@ -22,22 +22,22 @@ func HandlePost(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(utils.DefineError(err.Error()))
 	}
 
-	var user models.UserModel
+	var user models.User
 
-	err := db.Model(&models.UserModel{}).Where("id = ?", request.ID).First(&user).Error
-
-	if err != nil {
+	if err := db.Model(&models.User{}).Where("id = ?", request.ID).First(&user).Error; err != nil {
 		if err != gorm.ErrRecordNotFound {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(utils.DefineError("Database error"))
 		}
 
-		user = models.UserModel{
-			UUID: uuid.New(),
-			ID:   request.ID,
-			Name: request.FirstName + " " + request.LastName,
+		user = models.User{
+			UUID:     uuid.New(),
+			ID:       request.ID,
+			Name:     request.FirstName + " " + request.LastName,
+			Nickname: request.Username,
+			Picture:  request.PhotoURL,
 		}
 
-		if err := db.Model(&models.UserModel{}).Create(&user).Error; err != nil {
+		if err := db.Model(&models.User{}).Create(&user).Error; err != nil {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(utils.DefineError("Failed to create user"))
 		}
 	}
@@ -51,9 +51,11 @@ func HandlePost(ctx *fiber.Ctx) error {
 	return ctx.JSON(fiber.Map{
 		"data": fiber.Map{
 			"user": fiber.Map{
-				"uuid": user.UUID,
-				"id":   user.ID,
-				"name": user.Name,
+				"uuid":     user.UUID,
+				"id":       user.ID,
+				"name":     user.Name,
+				"nickname": user.Nickname,
+				"picture":  user.Picture,
 			},
 			"token": token,
 		},

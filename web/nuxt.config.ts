@@ -12,7 +12,7 @@ export default defineNuxtConfig({
     },
     runtimeConfig: {
         public: {
-            baseUrl: ''
+            baseUrl: 'https://pixelbattle.xlsft.ru/'
         }
     },
     app: {

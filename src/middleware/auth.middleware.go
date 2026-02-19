@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/xlsft/pixelbattle/database"
 	"github.com/xlsft/pixelbattle/database/models"
+	"github.com/xlsft/pixelbattle/utils"
 	"gorm.io/gorm"
 )
 
@@ -17,15 +18,15 @@ var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
 
 func AuthMiddleware() fiber.Handler {
 	db := database.UseDb()
-	return func(c *fiber.Ctx) error {
-		authHeader := c.Get("Authorization")
+	return func(ctx *fiber.Ctx) error {
+		authHeader := ctx.Get("Authorization")
 		if authHeader == "" {
-			return fiber.ErrUnauthorized
+			return ctx.Status(fiber.StatusUnauthorized).JSON(utils.DefineError("Unauthorized"))
 		}
 
 		parts := strings.SplitN(authHeader, " ", 2)
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			return fiber.ErrUnauthorized
+			return ctx.Status(fiber.StatusUnauthorized).JSON(utils.DefineError("Unauthorized"))
 		}
 
 		tokenStr := parts[1]
@@ -37,34 +38,34 @@ func AuthMiddleware() fiber.Handler {
 			return jwtSecret, nil
 		})
 		if err != nil || !token.Valid {
-			return fiber.ErrUnauthorized
+			return ctx.Status(fiber.StatusUnauthorized).JSON(utils.DefineError("Unauthorized"))
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			return fiber.ErrUnauthorized
+			return ctx.Status(fiber.StatusUnauthorized).JSON(utils.DefineError("Unauthorized"))
 		}
 
 		uuidStr, ok := claims["uuid"].(string)
 		if !ok {
-			return fiber.ErrUnauthorized
+			return ctx.Status(fiber.StatusUnauthorized).JSON(utils.DefineError("Unauthorized"))
 		}
 
 		userUUID, err := uuid.Parse(uuidStr)
 		if err != nil {
-			return fiber.ErrUnauthorized
+			return ctx.Status(fiber.StatusUnauthorized).JSON(utils.DefineError("Unauthorized"))
 		}
 
-		var user models.UserModel
-		if err := db.Model(&models.UserModel{}).First(&user, "uuid = ?", userUUID).Error; err != nil {
+		var user models.User
+		if err := db.Model(&models.User{}).First(&user, "uuid = ?", userUUID).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return fiber.ErrUnauthorized
+				return ctx.Status(fiber.StatusUnauthorized).JSON(utils.DefineError("Unauthorized"))
 			}
-			return fiber.ErrInternalServerError
+			return ctx.Status(fiber.StatusInternalServerError).JSON(utils.DefineError(err.Error()))
 		}
 
-		c.Locals("user", user)
+		ctx.Locals("user", user)
 
-		return c.Next()
+		return ctx.Next()
 	}
 }

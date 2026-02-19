@@ -3,17 +3,15 @@ import type { CanvasCache, CanvasOptions, CanvasState } from "./canvas.types"
 
 export type RenderLayer = (ctx: RenderContext) => void
 
-export type RenderContextInput = {
-    canvas: Ref<HTMLCanvasElement | null>
-    options: CanvasOptions
-    state: Ref<CanvasState>
-    cache: CanvasCache
-}
-
-export type RenderContext = RenderContextInput & {
+export type RenderContext = {
+    canvas: HTMLCanvasElement
     ctx: CanvasRenderingContext2D
+    options: CanvasOptions
+    state: CanvasState
+    cache: CanvasCache
     width: number
     height: number
     cell: number
-    bounds: { sc: number, ec: number, sr: number, er: number }
+    bounds: { sc: number, ec: number, sr: number, er: number },
+    map: Uint8Array
 }

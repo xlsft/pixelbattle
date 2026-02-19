@@ -24,13 +24,10 @@ export type CanvasOptions = {
 }
 
 export type CanvasState = {
-    loading: boolean
     version: number
     scale: number
-    frame: number
     panning: boolean
     offset: CanvasCoords
-    last: CanvasCoords
     hover: CanvasCoords<true>
     selected: CanvasCoords<true>
     gif: {
@@ -58,7 +55,6 @@ export type CanvasState = {
             }
         } | null
     }
-    map: number[]
 }
 
 export type CanvasCoords<Nullable extends boolean = false> = Nullable extends true

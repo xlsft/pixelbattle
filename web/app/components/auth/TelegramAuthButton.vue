@@ -14,5 +14,5 @@
 </script>
 
 <template>
-    <button @click="click">Войти через Telegram</button>
+    <button mini @click="click">Войти через Telegram</button>
 </template>

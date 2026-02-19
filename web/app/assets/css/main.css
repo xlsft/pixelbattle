@@ -62,6 +62,10 @@ button[black] {
     @apply bg-black! border
 }
 
+button[red] {
+    @apply bg-rose-500
+}
+
 button[mini] {
     @apply px-[12px]! text-[14px] max-h-[32px]
 }

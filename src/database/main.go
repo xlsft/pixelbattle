@@ -25,7 +25,7 @@ func InitializeDatabase() (*gorm.DB, error) {
 		return nil, err
 	}
 	Db = db
-	db.AutoMigrate(&models.PixelModel{}, &models.UserModel{})
+	db.AutoMigrate(&models.Pixel{}, &models.User{})
 	return db, nil
 }
 

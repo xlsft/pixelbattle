@@ -1,7 +1,8 @@
 <script setup lang="ts">
-    import AuthModal from './components/auth/AuthModal.vue';
+    import Canvas from './components/core/Canvas.vue'; 
+import CanvasOld from './components/core/CanvasOld.vue';
 </script>
 
 <template>
-    <AuthModal/>
+    <Canvas/>
 </template>

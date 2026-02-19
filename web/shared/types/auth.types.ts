@@ -12,4 +12,6 @@ export type UserModel = {
     uuid: string
     id: number
     name: string
+    nickname: string
+    picture: string
 }

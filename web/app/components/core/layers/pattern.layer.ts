@@ -10,7 +10,7 @@ export function pattern({ canvas, ctx, options, state, cache, width, height, cel
         cache.pattern = ctx.createPattern(off, 'repeat')!
     }
     const matrix = new DOMMatrix()
-    matrix.translateSelf(state.value.offset.x % spacing, state.value.offset.y % spacing); cache.pattern.setTransform(matrix)
+    matrix.translateSelf(state.offset.x % spacing, state.offset.y % spacing); cache.pattern.setTransform(matrix)
     ctx.fillStyle = cache.pattern; ctx.fillRect(0, 0, width, height)
-    ctx.clearRect(state.value.offset.x, state.value.offset.y, options.cols * cell, options.rows * cell)
+    ctx.clearRect(state.offset.x, state.offset.y, options.cols * cell, options.rows * cell)
 }
