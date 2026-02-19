@@ -1,5 +1,4 @@
 x-environment: &default-environment
-  ENV: development
   POSTGRES_HOST: db
   POSTGRES_USER: user
   POSTGRES_PASSWORD: password
