@@ -202,7 +202,7 @@
                     <span class="text-sm! text-white leading-[14px]">{{ auth.user?.name || "Имя Фамилия" }}</span>
                     <span class="text-xs! text-neutral-700! leading-[12px]">@{{ auth.user?.nickname || "nickname" }}</span>
                 </div>
-                <button mini red class="w-[32px] flex justify-center opacity-0 group-hover:opacity-100" title="Выход из аккаунта">X</button>
+                <button mini red class="w-[32px] flex justify-center opacity-0 group-hover:opacity-100" title="Выход из аккаунта" @click="auth.logout">X</button>
             </div>
             <div 
                 class="max-sm:top-[24px]! h-[16px] bg-black border text-xs! text-white/50! px-[6px] absolute bottom-[24px] right-[24px] pointer-events-none duration-500" 
@@ -247,7 +247,7 @@
             </div>
         </template>
         <TelegramAuthButton :id="7964362622" @data="async (data) => await auth.login(data)" v-else class="absolute bottom-4 left-1/2 -translate-x-1/2"/>
-        <pre class="z-[999999] absolute pointer-events-none text-xs! text-neutral-700! bottom-4 right-4">{{ fps }} {{ auth.user }} fps</pre>
+        <pre class="z-[999999] absolute pointer-events-none text-xs! text-neutral-700! bottom-4 right-4">{{ fps }} fps</pre>
     </div>
 </template>
 
