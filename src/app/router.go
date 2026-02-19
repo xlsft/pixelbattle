@@ -8,8 +8,9 @@ import (
 
 func DefineRouter(app *fiber.App) {
 
-	auth := app.Group("/auth")
+	api := app.Group("/api")
 
+	auth := api.Group("/auth")
 	auth.Post("/", authRoutes.HandlePost)
 	auth.Get("/", middleware.AuthMiddleware(), authRoutes.HandleGet)
 
