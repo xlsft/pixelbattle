@@ -195,7 +195,7 @@
             @touchend="move.touch.end"
         />
         
-        <template v-if="!auth.user?.id">
+        <template v-if="auth.user?.id">
             <div class="flex gap-4 absolute top-6 left-6 group">
                 <img :src="auth.user?.picture || '/placeholder.svg'" onerror="this.src = '/placeholder.svg'" class="min-h-[32px] min-w-[32px] h-[32px] w-[32px]">
                 <div class="flex flex-col justify-center">
