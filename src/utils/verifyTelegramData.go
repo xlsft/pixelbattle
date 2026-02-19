@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"os"
 	"sort"
 	"strconv"
@@ -42,14 +43,18 @@ func (data *TelegramData) VerifyTelegramData() error {
 
 	sort.Strings(check)
 
+	fmt.Println(check)
+	fmt.Println(os.Getenv("TG_TOKEN"))
+
 	secret := sha256.Sum256([]byte(os.Getenv("TG_TOKEN")))
 
 	h := hmac.New(sha256.New, secret[:])
 	h.Write([]byte(strings.Join(check, "\n")))
 	calculatedHash := hex.EncodeToString(h.Sum(nil))
 
+	fmt.Println(calculatedHash, data.Hash)
 	if !hmac.Equal([]byte(calculatedHash), []byte(data.Hash)) {
-		return errors.New("data is NOT from Telegram")
+		return errors.New("Hash is invalid")
 	}
 	if time.Now().Unix()-data.AuthDate > 86400 {
 		return errors.New("data is outdated")
