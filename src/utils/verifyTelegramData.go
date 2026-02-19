@@ -1,16 +1,9 @@
 package utils
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
-	"errors"
-	"fmt"
 	"os"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
+
+	telegramloginwidget "github.com/LipsarHQ/go-telegram-login-widget"
 )
 
 type TelegramData struct {
@@ -24,41 +17,15 @@ type TelegramData struct {
 }
 
 func (data *TelegramData) VerifyTelegramData() error {
-
-	check := []string{
-		"auth_date=" + strconv.FormatInt(data.AuthDate, 10),
-		"first_name=" + data.FirstName,
-		"id=" + strconv.FormatInt(data.ID, 10),
+	auth := telegramloginwidget.AuthorizationData{
+		AuthDate:  data.AuthDate,
+		FirstName: data.FirstName,
+		Hash:      data.Hash,
+		ID:        data.ID,
+		LastName:  data.LastName,
+		PhotoURL:  data.PhotoURL,
+		Username:  data.Username,
 	}
 
-	if data.LastName != "" {
-		check = append(check, "last_name="+data.LastName)
-	}
-	if data.Username != "" {
-		check = append(check, "username="+data.Username)
-	}
-	if data.PhotoURL != "" {
-		check = append(check, "photo_url="+data.PhotoURL)
-	}
-
-	sort.Strings(check)
-
-	fmt.Println(check)
-	fmt.Println(os.Getenv("TG_TOKEN"))
-
-	secret := sha256.Sum256([]byte(os.Getenv("TG_TOKEN")))
-
-	h := hmac.New(sha256.New, secret[:])
-	h.Write([]byte(strings.Join(check, "\n")))
-	calculatedHash := hex.EncodeToString(h.Sum(nil))
-
-	fmt.Println(calculatedHash, data.Hash)
-	if !hmac.Equal([]byte(calculatedHash), []byte(data.Hash)) {
-		return errors.New("Hash is invalid")
-	}
-	if time.Now().Unix()-data.AuthDate > 86400 {
-		return errors.New("data is outdated")
-	}
-
-	return nil
+	return auth.Check(os.Getenv("TG_TOKEN"))
 }

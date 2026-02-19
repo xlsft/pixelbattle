@@ -28,6 +28,7 @@ require (
 )
 
 require (
+	github.com/LipsarHQ/go-telegram-login-widget v0.0.0-20231102112033-ec628cac556e
 	github.com/gofiber/fiber/v2 v2.52.11
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/jinzhu/inflection v1.0.0 // indirect
