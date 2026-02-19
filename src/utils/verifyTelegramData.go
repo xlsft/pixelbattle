@@ -27,6 +27,8 @@ func (data *TelegramData) VerifyTelegramData() bool {
 		hexAuthCode = hex.EncodeToString(authCode)
 	)
 
+	fmt.Println(data, token, secret, checkString, authCode, hexAuthCode)
+
 	if hexAuthCode != data.Hash {
 		return false
 	}
