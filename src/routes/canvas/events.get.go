@@ -134,8 +134,9 @@ func HandleSSE(ctx *fiber.Ctx) error {
 	notify := done.Done()
 
 	ctx.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
-		w.Write(CompressEvents(initial))
-		w.Flush()
+		if err := WriteEvent(w, CompressEvents(initial)); err != nil {
+			return
+		}
 
 		defer func() {
 			cm.Lock()
