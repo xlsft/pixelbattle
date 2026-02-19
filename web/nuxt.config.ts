@@ -5,7 +5,11 @@ export default defineNuxtConfig({
     devtools: { enabled: true },
     css: ['~/assets/css/main.css'],  
     modules: ['@pinia/nuxt', 'pinia-plugin-persistedstate/nuxt', '@nuxt/scripts'],
-    vite: { plugins: [ tailwindcss() as any ], server: { allowedHosts: ['.tuna.am'] } },
+    ssr: false,
+    vite: { 
+        plugins: [ tailwindcss() as any ], 
+        server: { allowedHosts: ['.tuna.am'] },
+    },
     app: {
         head: {
             title: "xlsft`s pixelbattle",
