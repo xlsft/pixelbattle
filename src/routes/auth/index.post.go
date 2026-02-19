@@ -22,7 +22,7 @@ func HandlePost(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(utils.DefineError(err.Error()))
 	}
 
-	var user models.User
+	var user models.UserModel
 
 	err := db.Model(&models.UserModel{}).Where("id = ?", request.ID).First(&user).Error
 
@@ -31,7 +31,7 @@ func HandlePost(ctx *fiber.Ctx) error {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(utils.DefineError("Database error"))
 		}
 
-		user = models.User{
+		user = models.UserModel{
 			UUID: uuid.New(),
 			ID:   request.ID,
 			Name: request.FirstName + " " + request.LastName,
