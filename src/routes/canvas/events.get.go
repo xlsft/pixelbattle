@@ -108,21 +108,20 @@ func HandleSSE(ctx *fiber.Ctx) error {
 
 	// создаём клиента SSE
 	client := &SSEClient{
-		ch: make(chan []byte, 8), // увеличил буфер на всякий случай
+		ch: make(chan []byte, 16), // буфер увеличен
 	}
 
 	cm.Lock()
 	clients[client] = struct{}{}
 	cm.Unlock()
 
-	// удаляем клиента при выходе
 	defer func() {
 		cm.Lock()
 		delete(clients, client)
 		cm.Unlock()
 	}()
 
-	// собираем текущее состояние пикселей
+	// получаем текущее состояние пикселей
 	var pixels []models.Pixel
 	if err := db.Model(&models.Pixel{}).Find(&pixels).Error; err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(utils.DefineError(err.Error()))
@@ -140,9 +139,13 @@ func HandleSSE(ctx *fiber.Ctx) error {
 	notify := ctx.Context().Done()
 
 	ctx.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
-		// отправляем "heartbeat", чтобы соединение ожило
+		flush := func() {
+			w.Flush()
+		}
+
+		// сразу отправляем "heartbeat" для активации SSE
 		w.WriteString(":ok\n\n")
-		w.Flush()
+		flush()
 
 		// отправляем начальные пиксели
 		if len(initial) > 0 {
@@ -151,13 +154,20 @@ func HandleSSE(ctx *fiber.Ctx) error {
 			}
 		}
 
+		ticker := time.NewTicker(10 * time.Second) // heartbeat
+		defer ticker.Stop()
+
 		for {
 			select {
 			case payload := <-client.ch:
 				if err := WriteEvent(w, payload); err != nil {
 					return
 				}
-			case <-notify: // клиент закрыл соединение
+			case <-ticker.C:
+				// heartbeat чтобы соединение не висело
+				w.WriteString(":heartbeat\n\n")
+				flush()
+			case <-notify:
 				return
 			}
 		}
