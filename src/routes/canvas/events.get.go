@@ -89,7 +89,6 @@ func CompressEvents(data []PixelRequest) []byte {
 }
 
 func HandleSSE(ctx *fiber.Ctx) error {
-
 	db := database.UseDb()
 
 	ctx.Set("Content-Type", "text/event-stream")
@@ -108,6 +107,7 @@ func HandleSSE(ctx *fiber.Ctx) error {
 	if err := db.Model(&models.Pixel{}).Find(&pixels).Error; err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(utils.DefineError(err.Error()))
 	}
+
 	var initial []PixelRequest
 	for _, p := range pixels {
 		initial = append(initial, PixelRequest{
@@ -116,6 +116,12 @@ func HandleSSE(ctx *fiber.Ctx) error {
 			Color: p.Color,
 		})
 	}
+
+	done := ctx.Context()
+	if done == nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(utils.DefineError("Connection already closed"))
+	}
+	notify := done.Done()
 
 	ctx.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
 		w.Write(CompressEvents(initial))
@@ -130,10 +136,11 @@ func HandleSSE(ctx *fiber.Ctx) error {
 		for {
 			select {
 			case payload := <-client.ch:
-				w.Write(payload)
+				if _, err := w.Write(payload); err != nil {
+					return
+				}
 				w.Flush()
-
-			case <-ctx.Context().Done():
+			case <-notify:
 				return
 			}
 		}

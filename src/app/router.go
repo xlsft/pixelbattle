@@ -18,6 +18,7 @@ func DefineRouter(app *fiber.App) {
 	canvas := api.Group("/canvas")
 	canvas.Post("/", middleware.AuthMiddleware(), canvasRoutes.HandlePost)
 	canvas.Get("/", canvasRoutes.HandleGet)
+	canvasRoutes.StartEventBroker()
 	canvas.Get("/events", canvasRoutes.HandleSSE)
 
 	app.Use(func(c *fiber.Ctx) error {
