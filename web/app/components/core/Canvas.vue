@@ -247,7 +247,7 @@
             </div>
         </template>
         <TelegramAuthButton :id="7964362622" @data="async (data) => await auth.login(data)" v-else class="absolute bottom-4 left-1/2 -translate-x-1/2"/>
-        <pre class="z-[999999] absolute pointer-events-none text-xs! text-neutral-700! bottom-4 right-4">{{ fps }} fps</pre>
+        <pre class="z-[999999] absolute pointer-events-none text-xs! text-neutral-700! bottom-4 right-4">{{ fps }} {{ auth.user }} fps</pre>
     </div>
 </template>
 

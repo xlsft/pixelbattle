@@ -27,6 +27,7 @@ export const useAuthStore = defineStore('Auth', () => {
             const response = await useServer<{ data: { user?: UserModel, token: string }}>('auth', { method: 'post', json, auth: false })
             if (response.data.user) user.value = response.data.user
             if (response.data.token) token.value = response.data.token
+            console.log(user.value, token.value)
             return response
         },
         logout: () => {
