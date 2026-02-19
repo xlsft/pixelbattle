@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+@theme {
+    --color-accent: var(--color-blue-500)
+}
+
+* {
+    font-family: "Cascadia Mono", sans-serif;
+    font-variant-ligatures: no-historical-ligatures;
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;     /* Firefox */
+    @apply  outline-neutral-700 border-neutral-700 text-neutral-100 print:text-black! print:outline-black print:border-black select-none transition-all scroll-smooth cursor-crosshair
+} *::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+}
+
+*:not(h1,h2,h3) {
+    @apply sm:text-[14px] text-[12px]
+}
+
+html {
+    @apply overflow-hidden print:overflow-scroll max-w-dvw
+}
+
+body, #app {
+    @apply w-dvw h-dvh print:h-fit overflow-scroll bg-black flex flex-col items-center max-w-dvw
+}
+
+#app {
+    @apply relative min-w-full h-fit! print:w-full! md:max-w-[1000px] xl:max-w-[1200px] mt-[48px] md:mt-[96px] outline-1 print:outline-0 overflow-visible! min-h-[calc(100dvh-48px)] md:min-h-[calc(100dvh-96px-194px)]
+}
+
+footer {
+    @apply min-w-full h-fit! md:max-w-[700px] xl:max-w-[1080px] print:hidden
+}
+
+section {
+    @apply relative border-b w-full p-[24px] md:p-[48px] last:border-none print:border-none print:p-0!
+}
+
+header {
+    @apply w-full h-[48px] fixed top-0 bg-black z-[999] flex justify-between items-center px-[24px] border-b border-neutral-700! md:data-[floating=true]:border-neutral-700! md:data-[floating=false]:border-neutral-700/0! print:hidden
+}
+
+h1 {
+    @apply text-6xl! font-medium;
+}
+
+h2 {
+    @apply text-3xl! font-medium;
+}
+
+h3 {
+    @apply text-2xl! font-medium;
+}
+
+button {
+    @apply print:hidden bg-accent w-fit px-[32px] py-[12px] text-xl font-medium cursor-nw-resize! flex items-center justify-center hover:opacity-50 text-nowrap
+}
+
+button[black] {
+    @apply bg-black! border
+}
+
+button[mini] {
+    @apply px-[12px]! text-[14px] max-h-[32px]
+}
+
+button:disabled {
+    @apply opacity-50! hover:opacity-50! cursor-not-allowed!
+}
+
+a {
+    @apply cursor-nw-resize! underline opacity-50 hover:opacity-100
+}
+
+footer {
+    @apply w-full flex flex-col gap-[24px] sm:flex-row justify-between py-[48px] px-[24px] md:px-0
+}
+
+input, textarea {
+    @apply min-h-[48px] outline-1 px-[24px] py-[13px] cursor-context-menu!
+}
+
+textarea {
+    @apply min-h-[250px]
+}
+
+label {
+    @apply flex flex-col gap-[4px] text-[12px]
+}
+
+form {
+    @apply flex flex-col gap-[12px]
+}
+
+input[type="file"] {
+    @apply block w-full px-[24px] py-[13px] cursor-pointer transition-all file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-white hover:file:opacity-80;
+}
+
+ul, ol {
+    @apply list-[square] py-[12px] ml-[36px] mb-[12px]
+}
+
+.ps {
+    @apply text-xs! *:text-xs!
+}
+
+br {
+    @apply print:hidden
+}
