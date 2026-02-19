@@ -1,0 +1,9 @@
+FROM golang:alpine AS builder
+WORKDIR /
+COPY . .
+RUN go build --ldflags "-s -w" -o output ./cmd
+
+FROM alpine:latest
+WORKDIR /runtime
+COPY --from=builder ./output ./output
+ENTRYPOINT ["./output"]

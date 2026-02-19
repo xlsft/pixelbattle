@@ -1,0 +1,45 @@
+x-environment: &default-environment
+  ENV: development
+  POSTGRES_HOST: db
+  POSTGRES_USER: user
+  POSTGRES_PASSWORD: password
+  POSTGRES_DB: postgres
+  POSTGRES_PORT: 5432
+  JWT_SECRET: changemechangemechangemechangemechangemechangemechangeme
+  NUXT_PUBLIC_BASE_URL: https://127.0.0.1:5001
+
+services:
+  api:
+    container_name: api
+    build:
+      context: ../src
+      dockerfile: ../ci/Dockerfile.api
+    ports:
+      - "5000:8000"
+    environment: *default-environment
+    depends_on:
+      db:
+        condition: service_healthy
+  app:
+    container_name: app
+    build:
+      context: ../web
+      dockerfile: ../ci/Dockerfile.app
+    ports:
+      - "5001:3000"
+    environment: *default-environment
+    depends_on:
+      - api
+  db:
+    container_name: db
+    image: postgres:15
+    environment: *default-environment
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}
+      interval: 2s
+      timeout: 2s
+      retries: 10

@@ -13,5 +13,5 @@ type User struct {
 
 type UserModel struct {
 	gorm.Model
-	Pixel
+	User
 }

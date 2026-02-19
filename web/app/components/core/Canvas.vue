@@ -73,7 +73,7 @@
             state.value.offset.x += (after.x - before.x) * options.base * state.value.scale; state.value.offset.y += (after.y - before.y) * options.base * state.value.scale
             move.clamp()
         },
-        leave: () => { state.value.hover.x = null; state.value.hover.y = null },
+        leave: () => { state.value.hover.x = null; state.value.hover.y = null; move.pan.end() },
         pan: {
             start: (e: MouseEvent) => { state.value.panning = true; state.value.last.x = e.clientX; state.value.last.y = e.clientY },
             end: () => state.value.panning = false
@@ -113,7 +113,11 @@
         },
     }
 
-
+ 
+    // watch(() => state.value.scale, () => { if (state.value.scale < .5) actions.selected.clear(); actions.map.save('scale'); state.value.ui.updating.scale = true; debouncer.use(() => state.value.ui.updating.scale = false)})
+    // watch(() => [state.value.hover, state.value.selected], () => state.value.ui.updating.pos = !!((state.value.hover.x && state.value.hover.y) || (state.value.selected.x && state.value.selected.y)), { deep: true })
+    // watch(() => state.value.selected, () => { state.value.ui.current = null; socket.emit('pb:info', state.value.selected) }, { deep: true })
+    // watch(() => state.value.ui.color, () => render.value?.frame())
 
 
 
@@ -154,3 +158,24 @@
     //     }
     // }
 </script>
+
+
+<template>
+    <div @mouseleave="move.leave" class="p-0! print:hidden border-none! max-sm:fixed! max-sm:top-0! max-sm:left-0! max-sm:z-[99999]! max-sm:h-dvh bg-black">
+        <canvas 
+            ref="canvas" 
+            class="block w-full h-full bg-black transition-opacity! duration-500!" 
+            @mousedown="move.pan.start" 
+            @mousemove="move.drag" 
+            @mouseup="move.pan.end" 
+            @wheel.prevent="move.wheel" 
+            @touchstart.passive="move.touch.start" 
+            @touchmove.passive="move.touch.move" 
+            @touchend="move.touch.end"
+        />
+    </div>
+</template>
+
+<style scoped>
+    canvas { touch-action: none; user-select: none; }
+</style>

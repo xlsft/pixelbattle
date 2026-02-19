@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/xlsft/pixelbattle/src/database/models"
+	"github.com/xlsft/pixelbattle/database/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -25,7 +25,7 @@ func InitializeDatabase() (*gorm.DB, error) {
 		return nil, err
 	}
 	Db = db
-	db.AutoMigrate(&models.PixelModel{})
+	db.AutoMigrate(&models.PixelModel{}, &models.UserModel{})
 	return db, nil
 }
 
