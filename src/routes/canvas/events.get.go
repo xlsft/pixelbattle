@@ -104,6 +104,7 @@ func HandleSSE(ctx *fiber.Ctx) error {
 	ctx.Set("Content-Type", "text/event-stream")
 	ctx.Set("Cache-Control", "no-cache")
 	ctx.Set("Connection", "keep-alive")
+	ctx.Set("Transfer-Encoding", "chunked")
 
 	client := &SSEClient{
 		ch: make(chan []byte, 4),
@@ -113,6 +114,7 @@ func HandleSSE(ctx *fiber.Ctx) error {
 	clients[client] = struct{}{}
 	cm.Unlock()
 
+	// Берём текущее состояние пикселей
 	var pixels []models.Pixel
 	if err := db.Model(&models.Pixel{}).Find(&pixels).Error; err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(utils.DefineError(err.Error()))
@@ -134,15 +136,18 @@ func HandleSSE(ctx *fiber.Ctx) error {
 	notify := done.Done()
 
 	ctx.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
-		if err := WriteEvent(w, CompressEvents(initial)); err != nil {
-			return
-		}
-
 		defer func() {
 			cm.Lock()
 			delete(clients, client)
 			cm.Unlock()
 		}()
+		w.WriteString(":ok\n\n")
+		w.Flush()
+
+		// Отправляем начальные пиксели через SSE
+		if err := WriteEvent(w, CompressEvents(initial)); err != nil {
+			return
+		}
 
 		for {
 			select {
