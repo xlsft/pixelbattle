@@ -106,47 +106,49 @@ func HandleSSE(ctx *fiber.Ctx) error {
 	ctx.Set("Connection", "keep-alive")
 	ctx.Set("Transfer-Encoding", "chunked")
 
+	// создаём клиента SSE
 	client := &SSEClient{
-		ch: make(chan []byte, 4),
+		ch: make(chan []byte, 8), // увеличил буфер на всякий случай
 	}
 
 	cm.Lock()
 	clients[client] = struct{}{}
 	cm.Unlock()
 
-	// Берём текущее состояние пикселей
+	// удаляем клиента при выходе
+	defer func() {
+		cm.Lock()
+		delete(clients, client)
+		cm.Unlock()
+	}()
+
+	// собираем текущее состояние пикселей
 	var pixels []models.Pixel
 	if err := db.Model(&models.Pixel{}).Find(&pixels).Error; err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(utils.DefineError(err.Error()))
 	}
 
-	var initial []PixelRequest
-	for _, p := range pixels {
-		initial = append(initial, PixelRequest{
+	initial := make([]PixelRequest, len(pixels))
+	for i, p := range pixels {
+		initial[i] = PixelRequest{
 			X:     p.X,
 			Y:     p.Y,
 			Color: p.Color,
-		})
+		}
 	}
 
-	done := ctx.Context()
-	if done == nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(utils.DefineError("Connection already closed"))
-	}
-	notify := done.Done()
+	notify := ctx.Context().Done()
 
 	ctx.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
-		defer func() {
-			cm.Lock()
-			delete(clients, client)
-			cm.Unlock()
-		}()
+		// отправляем "heartbeat", чтобы соединение ожило
 		w.WriteString(":ok\n\n")
 		w.Flush()
 
-		// Отправляем начальные пиксели через SSE
-		if err := WriteEvent(w, CompressEvents(initial)); err != nil {
-			return
+		// отправляем начальные пиксели
+		if len(initial) > 0 {
+			if err := WriteEvent(w, CompressEvents(initial)); err != nil {
+				return
+			}
 		}
 
 		for {
@@ -155,7 +157,7 @@ func HandleSSE(ctx *fiber.Ctx) error {
 				if err := WriteEvent(w, payload); err != nil {
 					return
 				}
-			case <-notify:
+			case <-notify: // клиент закрыл соединение
 				return
 			}
 		}
