@@ -166,12 +166,13 @@
             } 
             else { state.value.selected.x = null; state.value.selected.y = null }
         },
-        apply: async () => {
+        apply: async (clear = true) => {
             if (!state.value.selected || state.value.selected.y === null || state.value.selected.x === null || !auth.getToken()) return
-            const i =  state.value.selected.y * options.cols + (state.value.selected.x + 1)
+            const i = (state.value.selected.y * options.cols + (state.value.selected.x + 1)) - 1
             map.value[i] = state.value.ui.color
             useServer<{ data: CanvasState['ui']['current'] } & CanvasCoords >('canvas', { method: 'post', json: { ...state.value.selected, color: state.value.ui.color } })
-            actions.clear()
+            if (clear) actions.clear()
+            state.value.version++
         },
         clear: async () => state.value.selected = { x: null, y: null }
     }
@@ -189,6 +190,17 @@
         actions.frame()
         state.value.scale = position.value.scale || 0
         state.value.offset = position.value.offset || { x: 0, y: 0 }
+
+        window.addEventListener('keyup', (e) => {
+            if (!state.value.selected || state.value.selected.y === null || state.value.selected.x === null || !auth.getToken()) return
+            if (e.key === 'ArrowUp' || e.key === 'w') state.value.selected.y = Math.min(Math.max(state.value.selected.y - 1, 0), options.cols - 1)
+            if (e.key === 'ArrowLeft' || e.key === 'a') state.value.selected.x = Math.min(Math.max(state.value.selected.x - 1, 0), options.rows - 1)
+            if (e.key === 'ArrowDown' || e.key === 's') state.value.selected.y = Math.min(Math.max(state.value.selected.y + 1, 0), options.cols - 1)
+            if (e.key === 'ArrowRight' || e.key === 'd') state.value.selected.x = Math.min(Math.max(state.value.selected.x + 1, 0), options.rows - 1)
+            if (e.key === 'Shift') state.value.ui.color = (state.value.ui.color + 1) % Object.keys(options.colors.map).length
+            if (e.key === 'Enter' || e.key === ' ') actions.apply(false)
+            if (e.key === 'Backspace') { state.value.ui.color = 0; actions.apply(false) }
+        })
     })
 </script>
 
@@ -208,6 +220,7 @@
         />
         
         <template v-if="auth.user?.id">
+            <pre class="absolute pointer-events-none text-[8px]! text-neutral-700! top-1.5 right-2">{{ fps }} fps</pre>
             <div class="flex gap-4 absolute top-6 left-6 group">
                 <img :src="auth.user?.picture || '/placeholder.svg'" onerror="this.src = '/placeholder.svg'" class="min-h-[32px] min-w-[32px] h-[32px] w-[32px]">
                 <div class="flex flex-col justify-center">
@@ -254,12 +267,12 @@
                 </div>
                 <div class="w-full flex items-center justify-between gap-[6px] max-sm:gap-[12px]">
                     <button mini black class="h-[24px]! max-sm:h-[48px]! max-sm:grow py-0! text-xs! max-sm:text-lg!" @click="actions.clear">Отмена</button>
-                    <button mini class="h-[24px]! max-sm:h-[48px]! max-sm:grow py-0! text-xs! max-sm:text-lg!" @click="actions.apply">Поставить</button>
+                    <button mini class="h-[24px]! max-sm:h-[48px]! max-sm:grow py-0! text-xs! max-sm:text-lg!" @click="() => actions.apply()">Поставить</button>
                 </div>
             </div>
         </template>
-        <TelegramAuthButton :id="7964362622" @data="async (data) => await auth.login(data)" v-else class="absolute bottom-4 left-1/2 -translate-x-1/2"/>
-        <pre class="z-[999999] absolute pointer-events-none text-xs! text-neutral-700! bottom-4 right-4">{{ fps }} fps</pre>
+        <TelegramAuthButton :id="7964362622" @data="async (data) => await auth.login(data)" v-else class="absolute bottom-6 left-1/2 -translate-x-1/2"/>
+        
     </div>
 </template>
 

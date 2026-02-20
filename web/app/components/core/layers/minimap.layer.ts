@@ -2,7 +2,6 @@ import { colors } from "../Canvas.config";
 
 export function minimap({ canvas, ctx, options, state, width, height, cell, map }: RenderContext) {
     if (window.innerWidth < 640) return
-    console.log(window.innerWidth)
     const style = { size: 150, padding: 24 }
     const off = document.createElement('canvas'); off.width = options.cols; off.height = options.rows;
     const offCtx = off.getContext('2d')!;
