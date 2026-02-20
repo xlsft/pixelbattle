@@ -187,6 +187,7 @@
         apply: async (clear = true) => {
             if (!state.value.selected || state.value.selected.y === null || state.value.selected.x === null || !auth.getToken()) return
             const i = (state.value.selected.y * options.cols + (state.value.selected.x + 1)) - 1
+            if (map.value[i] === state.value.ui.color) return
             map.value[i] = state.value.ui.color
             useServer<{ data: CanvasState['ui']['current'] } & CanvasCoords >('canvas', { method: 'post', json: { ...state.value.selected, color: state.value.ui.color } })
             if (clear) actions.clear()
