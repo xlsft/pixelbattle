@@ -1,71 +1,52 @@
 package canvasRoutes
 
 import (
+	"fmt"
 	"math"
 	"sync"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/websocket/v2"
 	"github.com/xlsft/pixelbattle/database"
 	"github.com/xlsft/pixelbattle/database/models"
-	"github.com/xlsft/pixelbattle/utils"
 )
-
-type SSEClient struct {
-	ch chan []byte
-}
 
 var (
-	cm      sync.Mutex
-	clients = map[*SSEClient]struct{}{}
-	em      sync.Mutex
-	events  []PixelRequest
+	events  = make([]PixelRequest, 0)
+	em      = &sync.Mutex{}
+	clients = make(map[*websocket.Conn]bool) // подключённые клиенты
+	cm      = &sync.Mutex{}
 )
 
-func StartEventBroker() {
+func StartEventLoop() {
 	go func() {
 		ticker := time.NewTicker(3 * time.Second)
 		defer ticker.Stop()
-
 		for range ticker.C {
-			events := FlushEvents()
+			em.Lock()
 			if len(events) == 0 {
+				em.Unlock()
 				continue
 			}
 
-			payload := CompressEvents(events)
+			batch := events
+			events = nil
+			em.Unlock()
 
+			data := CompressEvents(batch)
 			cm.Lock()
-			for client := range clients {
-				select {
-				case client.ch <- payload:
-				default:
-					delete(clients, client)
-				}
+			for c := range clients {
+				_ = c.WriteMessage(websocket.BinaryMessage, data)
 			}
 			cm.Unlock()
 		}
 	}()
 }
 
-func PushEvent(update PixelRequest) {
+func PushEvents(data []PixelRequest) {
 	em.Lock()
-	defer em.Unlock()
-
-	events = append(events, update)
-}
-
-func FlushEvents() []PixelRequest {
-	em.Lock()
-	defer em.Unlock()
-
-	if len(events) == 0 {
-		return nil
-	}
-
-	out := events
-	events = nil
-	return out
+	events = append(events, data...)
+	em.Unlock()
 }
 
 func CompressEvents(data []PixelRequest) []byte {
@@ -87,83 +68,28 @@ func CompressEvents(data []PixelRequest) []byte {
 	return buffer
 }
 
-func HandleSSE(ctx *fiber.Ctx) error {
-
-	ctx.Set("Content-Type", "text/event-stream")
-	ctx.Set("Cache-Control", "no-cache")
-	ctx.Set("Connection", "keep-alive")
-	ctx.Set("Transfer-Encoding", "chunked")
+func HandleEventsWS(ctx *websocket.Conn) {
+	defer ctx.Close()
 
 	db := database.UseDb()
-	var pixels []models.Pixel
-	if err := db.Model(&models.Pixel{}).Find(&pixels).Error; err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(utils.DefineError(err.Error()))
+
+	var p []models.Pixel
+	if err := db.Model(&models.Pixel{}).Find(&p).Error; err != nil {
+		return
 	}
 
-	return nil
+	pixels := make([]PixelRequest, len(p))
+	for i, p := range p {
+		pixels[i] = PixelRequest{
+			X:     p.X,
+			Y:     p.Y,
+			Color: p.Color,
+		}
+	}
 
-	// // создаём клиента SSE
-	// client := &SSEClient{
-	// 	ch: make(chan []byte, 16), // буфер увеличен
-	// }
+	fmt.Println((CompressEvents(pixels)))
 
-	// cm.Lock()
-	// clients[client] = struct{}{}
-	// cm.Unlock()
-
-	// defer func() {
-	// 	cm.Lock()
-	// 	delete(clients, client)
-	// 	cm.Unlock()
-	// }()
-
-	// // получаем текущее состояние пикселей
-
-	// initial := make([]PixelRequest, len(pixels))
-	// for i, p := range pixels {
-	// 	initial[i] = PixelRequest{
-	// 		X:     p.X,
-	// 		Y:     p.Y,
-	// 		Color: p.Color,
-	// 	}
-	// }
-
-	// notify := ctx.Context().Done()
-
-	// ctx.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
-	// 	flush := func() {
-	// 		w.Flush()
-	// 	}
-
-	// 	// сразу отправляем "heartbeat" для активации SSE
-	// 	w.WriteString(":ok\n\n")
-	// 	flush()
-
-	// 	// отправляем начальные пиксели
-	// 	if len(initial) > 0 {
-	// 		if err := WriteEvent(w, CompressEvents(initial)); err != nil {
-	// 			return
-	// 		}
-	// 	}
-
-	// 	ticker := time.NewTicker(10 * time.Second) // heartbeat
-	// 	defer ticker.Stop()
-
-	// 	for {
-	// 		select {
-	// 		case payload := <-client.ch:
-	// 			if err := WriteEvent(w, payload); err != nil {
-	// 				return
-	// 			}
-	// 		case <-ticker.C:
-	// 			// heartbeat чтобы соединение не висело
-	// 			w.WriteString(":heartbeat\n\n")
-	// 			flush()
-	// 		case <-notify:
-	// 			return
-	// 		}
-	// 	}
-	// })
-
-	// return nil
+	if err := ctx.WriteMessage(websocket.BinaryMessage, CompressEvents(pixels)); err != nil {
+		return
+	}
 }

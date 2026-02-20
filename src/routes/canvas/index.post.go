@@ -46,11 +46,11 @@ func HandlePost(ctx *fiber.Ctx) error {
 		}
 	}
 
-	PushEvent(PixelRequest{
+	PushEvents([]PixelRequest{{
 		X:     pixel.X,
 		Y:     pixel.Y,
 		Color: pixel.Color,
-	})
+	}})
 
 	return ctx.JSON(fiber.Map{
 		"data": fiber.Map{
