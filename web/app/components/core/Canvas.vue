@@ -116,7 +116,11 @@
                 if (e.touches.length === 1) { const t = e.touches[0] as Touch
                     state.value.panning = true
                     last.value.x = t.clientX; last.value.y = t.clientY
-                } else if (e.touches.length === 2) state.value.touch = move.touch.calc(e.touches[0] as Touch, e.touches[1] as Touch)
+                } else if (e.touches.length === 2) {
+                    const touch = move.touch.calc(e.touches[0] as Touch, e.touches[1] as Touch)
+                    state.value.touch.dist = touch.dist; state.value.touch.center = touch.center
+                }
+                
             },
             move: (e: TouchEvent) => { if (!canvas.value) return
                 if (e.touches.length === 1 && state.value.panning) { const t = e.touches[0] as Touch
@@ -127,7 +131,8 @@
                     const { dist, center } = move.touch.calc(e.touches[0] as Touch, e.touches[1] as Touch)
                     if (state.value.touch.dist && state.value.touch.center) {
                         const rect = canvas.value.getBoundingClientRect()
-                        const cx = state.value.touch.center.x - rect.left, cy = state.value.touch.center.y - rect.top
+                        const cx = state.value.touch.center.x - rect.left
+                        const cy = state.value.touch.center.y - rect.top
                         const before = move.screen(cx, cy)
                         state.value.scale = Math.max(options.scale.min, Math.min(options.scale.max, state.value.scale * (dist / state.value.touch.dist)))
                         const after = move.screen(cx, cy)
@@ -136,9 +141,21 @@
                         move.clamp()
                     }
                     state.value.touch = { dist, center }
+                    last.value = { x: center.x, y: center.y }
                 }
             },
-            end: (e: TouchEvent) => e.touches.length !== 0 ? null : state.value.panning = false
+            end: (e: TouchEvent) => {
+                if (!canvas.value) return
+                if (e.touches.length === 0) {
+                    state.value.panning = false
+                    state.value.touch = { dist: 0, center: null }
+                } else if (e.touches.length === 1) {
+                    const t = e.touches[0] as Touch
+                    state.value.panning = true
+                    last.value = { x: t.clientX, y: t.clientY }
+                    state.value.touch = { dist: 0, center: null }
+                }
+            }
         },
     }
 
