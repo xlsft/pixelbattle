@@ -242,7 +242,7 @@
         tma.init()
         tma.addToHomeScreen()
         tma.swipeBehavior.mount()
-        tma.swipeBehavior.enableVertical();
+        tma.swipeBehavior.disableVertical();
         tma.initData.restore()
         tma.viewport.mount()
         tma.postEvent('web_app_request_fullscreen')
@@ -253,101 +253,132 @@
         const data = tma.initData.raw()
         if (!data) throw createError({ statusCode: 400, message: 'No init data provided' })
         auth.loginByInitData({ data })
+
+        onMounted(() => {
+            const launchParams = tma.retrieveLaunchParams()
+            if (['macos', 'tdesktop', 'weba', 'web', 'webk'].includes(launchParams.platform as string)) return
+            tma.postEvent('web_app_expand')
+            document.body.classList.add('mobile-body');
+            document.getElementById('wrap')!.classList.add('mobile-wrap');
+            document.getElementById('content')!.classList.add('mobile-content');
+        })
     }
 </script>
 
 
 <template>
-    <Teleport to="body">
-        <div class="w-dvw h-dvh absolute top-0 left-0 flex items-center justify-center transition-all" :class="loading ? 'backdrop-blur-sm' : 'pointer-events-none opacity-0'">
-            <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="animate-spin w-12 h-12">
-                <path d="M98 50C98 59.4935 95.1848 68.7738 89.9105 76.6674C84.6362 84.5609 77.1396 90.7132 68.3688 94.3462C59.5979 97.9792 49.9467 98.9298 40.6356 97.0777C31.3245 95.2256 22.7717 90.654 16.0588 83.9411C9.34592 77.2282 4.77437 68.6754 2.92229 59.3643C1.07021 50.0532 2.02079 40.402 5.65382 31.6311C9.28684 22.8603 15.4391 15.3637 23.3327 10.0894C31.2263 4.81511 40.5066 1.99998 50.0001 2" stroke="white" stroke-width="4"/>
-            </svg>
-        </div>
-    </Teleport>
-    <div @mouseleave="move.leave" class="w-full h-full bg-black" :style="`--ui-inset: ${state.inset || 24}px`">
-        <canvas 
-            ref="canvas" 
-            class="block w-full h-full bg-black transition-opacity! duration-500!" 
-            @mousedown="move.pan.start" 
-            @mousemove="move.drag" 
-            @mouseup="move.pan.end" 
-            @wheel.prevent="move.wheel" 
-            @touchstart.passive="move.touch.start" 
-            @touchmove.passive="move.touch.move" 
-            @touchend="move.touch.end"
-        />
+    <div id="wrap">
+        <div id="content">
+            <Teleport to="body">
+                <div class="w-dvw h-dvh absolute top-0 left-0 flex items-center justify-center transition-all" :class="loading ? 'backdrop-blur-sm' : 'pointer-events-none opacity-0'">
+                    <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="animate-spin w-12 h-12">
+                        <path d="M98 50C98 59.4935 95.1848 68.7738 89.9105 76.6674C84.6362 84.5609 77.1396 90.7132 68.3688 94.3462C59.5979 97.9792 49.9467 98.9298 40.6356 97.0777C31.3245 95.2256 22.7717 90.654 16.0588 83.9411C9.34592 77.2282 4.77437 68.6754 2.92229 59.3643C1.07021 50.0532 2.02079 40.402 5.65382 31.6311C9.28684 22.8603 15.4391 15.3637 23.3327 10.0894C31.2263 4.81511 40.5066 1.99998 50.0001 2" stroke="white" stroke-width="4"/>
+                    </svg>
+                </div>
+            </Teleport>
+            <div @mouseleave="move.leave" class="w-full h-full bg-black" :style="`--ui-inset: ${state.inset || 24}px`">
+                <canvas 
+                    ref="canvas" 
+                    class="block w-full h-full bg-black transition-opacity! duration-500!" 
+                    @mousedown="move.pan.start" 
+                    @mousemove="move.drag" 
+                    @mouseup="move.pan.end" 
+                    @wheel.prevent="move.wheel" 
+                    @touchstart.passive="move.touch.start" 
+                    @touchmove.passive="move.touch.move" 
+                    @touchend="move.touch.end"
+                />
 
-        <pre class="absolute pointer-events-none text-[8px]! text-neutral-700! top-1.5 right-2">{{ fps }} fps</pre>
-        <template v-if="auth.user?.id">
-            <div 
-                class="flex gap-4 absolute left-[24px] group top-(--ui-inset) max-sm:top-[calc(var(--ui-inset)+24px)] max-sm:left-1/2 max-sm:-translate-x-1/2"
-            >
-                <img :src="auth.user?.picture || '/placeholder.svg'" onerror="this.src = '/placeholder.svg'" class="min-h-[32px] min-w-[32px] h-[32px] w-[32px] bg-[#333333]">
-                <div class="flex flex-col justify-center">
-                    <span class="text-sm! text-white leading-[14px]">{{ auth.user?.name || "Имя Фамилия" }}</span>
-                    <span class="text-xs! text-neutral-700! leading-[12px]">@{{ auth.user?.nickname || "nickname" }}</span>
-                </div>
-                <button mini red class="w-[32px] flex justify-center max-sm:opacity-100 opacity-0 group-hover:opacity-100" title="Выход из аккаунта" v-if="!tma.isTMA()" @click="auth.logout">X</button>
-            </div>
-            <div 
-                class="max-sm:hidden h-[16px] bg-black border text-xs! text-white/50! px-[6px] absolute bottom-[24px] right-[24px] pointer-events-none duration-500" 
-                :class="state.ui.updating.scale && state.scale > .5 ? 'opacity-100' : 'opacity-0'"
-            >
-                {{ (state.scale * 100).toFixed(0) }}%
-            </div>
-            <div 
-                class="max-sm:top-(--ui-inset) max-sm:mt-[64px] max-sm:left-1/2 max-sm:-translate-x-1/2 max-sm:w-fit h-[16px] bg-black border text-xs! text-white/50! px-[6px] absolute bottom-[24px] left-[24px] pointer-events-none duration-500" 
-                :class="[
-                    state.ui.updating.pos && state.scale > .5 && ((state.hover.x != null && state.hover.y != null) || (state.selected.x != null && state.selected.y != null)) ? 'opacity-100' : 'opacity-0',
-                ]"
-            >
-                {{ (state.selected.x ?? state.hover.x ?? 0) + 1 }}x{{ (state.selected.y ?? state.hover.y ?? 0) + 1 }}
-            </div>
-            <div 
-                class="
-                    bg-black p-[6px] max-sm:p-[12px] flex max-sm:flex-col gap-[6px] max-sm:gap-[12px] absolute border bottom-[24px] left-1/2 
-                    -translate-x-1/2 max-sm:w-full max-sm:bottom-0 max-sm:border-none! max-sm:outline-1 outline-offset-[1px]
-                " 
-                :class="[
-                    state.selected.x != null && state.selected.y != null && state.scale > .5 ? 'opacity-100 *:pointer-events-auto pointer-events-auto' : 'opacity-0 *:pointer-events-none pointer-events-none',
-                    tma.isTMA() ? 'max-sm:pb-[24px]' : ''
-                ]"
-            >
-                <div class="flex max-sm:flex-wrap w-full gap-[6px] max-sm:gap-[12px]">
-                    <div
-                        v-for="color, i in Object.values(options.colors.map)"
-                        :data-current="state.ui.color === i" 
-                        :style="{ background: `${color.background} !important` }"
-                        :class="i === 0 ? 'border': ''"
+                <pre class="absolute pointer-events-none text-[8px]! text-neutral-700! top-1.5 right-2">{{ fps }} fps</pre>
+                <template v-if="auth.user?.id">
+                    <div 
+                        class="flex gap-4 absolute left-[24px] group top-(--ui-inset) max-sm:top-[calc(var(--ui-inset)+24px)] max-sm:left-1/2 max-sm:-translate-x-1/2"
+                    >
+                        <img :src="auth.user?.picture || '/placeholder.svg'" onerror="this.src = '/placeholder.svg'" class="min-h-[32px] min-w-[32px] h-[32px] w-[32px] bg-[#333333]">
+                        <div class="flex flex-col justify-center">
+                            <span class="text-sm! text-white leading-[14px]">{{ auth.user?.name || "Имя Фамилия" }}</span>
+                            <span class="text-xs! text-neutral-700! leading-[12px]">@{{ auth.user?.nickname || "nickname" }}</span>
+                        </div>
+                        <button mini red class="w-[32px] flex justify-center max-sm:opacity-100 opacity-0 group-hover:opacity-100" title="Выход из аккаунта" v-if="!tma.isTMA()" @click="auth.logout">X</button>
+                    </div>
+                    <div 
+                        class="max-sm:hidden h-[16px] bg-black border text-xs! text-white/50! px-[6px] absolute bottom-[24px] right-[24px] pointer-events-none duration-500" 
+                        :class="state.ui.updating.scale && state.scale > .5 ? 'opacity-100' : 'opacity-0'"
+                    >
+                        {{ (state.scale * 100).toFixed(0) }}%
+                    </div>
+                    <div 
+                        class="max-sm:top-(--ui-inset) max-sm:mt-[64px] max-sm:left-1/2 max-sm:-translate-x-1/2 max-sm:w-fit h-[16px] bg-black border text-xs! text-white/50! px-[6px] absolute bottom-[24px] left-[24px] pointer-events-none duration-500" 
+                        :class="[
+                            state.ui.updating.pos && state.scale > .5 && ((state.hover.x != null && state.hover.y != null) || (state.selected.x != null && state.selected.y != null)) ? 'opacity-100' : 'opacity-0',
+                        ]"
+                    >
+                        {{ (state.selected.x ?? state.hover.x ?? 0) + 1 }}x{{ (state.selected.y ?? state.hover.y ?? 0) + 1 }}
+                    </div>
+                    <div 
                         class="
-                            data-[current=true]:opacity-100 data-[current=false]:opacity-25 max-sm:min-h-[32px] max-sm:min-w-[32px] max-sm:grow max-sm:w-[48px]
-                            h-[24px] w-[24px] flex items-center justify-center text-[24px]! font-bold cursor-nw-resize! hover:opacity-50
+                            bg-black p-[6px] max-sm:p-[12px] flex max-sm:flex-col gap-[6px] max-sm:gap-[12px] absolute border bottom-[24px] left-1/2 
+                            -translate-x-1/2 max-sm:w-full max-sm:bottom-0 max-sm:border-none! max-sm:outline-1 outline-offset-[1px]
                         " 
-                        @click="() => {
-                            state.ui.color = i
-                            tma.hapticFeedback.impactOccurred('soft')
-                        }"    
-                        @mouseleave="() => {
-                            move.leave()
-                            move.pan.end()
-                        }"
-                    />
-                </div>
-                <div class="w-full flex items-center justify-between gap-[6px] max-sm:gap-[12px]">
-                    <button mini black class="h-[24px]! max-sm:h-[48px]! max-sm:grow py-0! text-xs! max-sm:text-lg!" @click="actions.clear">Отмена</button>
-                    <button mini class="h-[24px]! max-sm:h-[48px]! max-sm:grow py-0! text-xs! max-sm:text-lg!" @click="() => actions.apply()">Поставить</button>
-                </div>
+                        :class="[
+                            state.selected.x != null && state.selected.y != null && state.scale > .5 ? 'opacity-100 *:pointer-events-auto pointer-events-auto' : 'opacity-0 *:pointer-events-none pointer-events-none',
+                            tma.isTMA() ? 'max-sm:pb-[24px]' : ''
+                        ]"
+                    >
+                        <div class="flex max-sm:flex-wrap w-full gap-[6px] max-sm:gap-[12px]">
+                            <div
+                                v-for="color, i in Object.values(options.colors.map)"
+                                :data-current="state.ui.color === i" 
+                                :style="{ background: `${color.background} !important` }"
+                                :class="i === 0 ? 'border': ''"
+                                class="
+                                    data-[current=true]:opacity-100 data-[current=false]:opacity-25 max-sm:min-h-[32px] max-sm:min-w-[32px] max-sm:grow max-sm:w-[48px]
+                                    h-[24px] w-[24px] flex items-center justify-center text-[24px]! font-bold cursor-nw-resize! hover:opacity-50
+                                " 
+                                @click="() => {
+                                    state.ui.color = i
+                                    tma.hapticFeedback.impactOccurred('soft')
+                                }"    
+                                @mouseleave="() => {
+                                    move.leave()
+                                    move.pan.end()
+                                }"
+                            />
+                        </div>
+                        <div class="w-full flex items-center justify-between gap-[6px] max-sm:gap-[12px]">
+                            <button mini black class="h-[24px]! max-sm:h-[48px]! max-sm:grow py-0! text-xs! max-sm:text-lg!" @click="actions.clear">Отмена</button>
+                            <button mini class="h-[24px]! max-sm:h-[48px]! max-sm:grow py-0! text-xs! max-sm:text-lg!" @click="() => actions.apply()">Поставить</button>
+                        </div>
+                    </div>
+                </template>
+                <template v-else>
+                    <TelegramAuthButton :id="7964362622" @data="async (data) => await auth.login(data)" v-if="!tma.isTMA()" class="absolute bottom-6 left-1/2 -translate-x-1/2"/>
+                </template>
             </div>
-        </template>
-        <template v-else>
-            <TelegramAuthButton :id="7964362622" @data="async (data) => await auth.login(data)" v-if="!tma.isTMA()" class="absolute bottom-6 left-1/2 -translate-x-1/2"/>
-        </template>
-        
-        
+        </div>
     </div>
 </template>
 
 <style scoped>
     canvas { touch-action: none; user-select: none; }
+    .mobile-body {
+        overflow: hidden;
+        height: 100vh;
+    }
+
+    .mobile-wrap {
+        position: absolute;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        background: red;
+    }
+
+    .mobile-content {
+        height: calc(100% + 1px);
+        background: green;
+    }
 </style>
