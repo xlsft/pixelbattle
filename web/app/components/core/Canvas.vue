@@ -148,18 +148,30 @@
             layers.forEach(layer => layer(context.value!))
             if (!once) frame.value = requestAnimationFrame(() => actions.frame())
         },
-        select: (e: MouseEvent | TouchEvent) => { if (!canvas.value || state.value.scale < .5/* || !auth.getToken()*/) return
+        select: (e: MouseEvent | TouchEvent) => { if (!canvas.value || state.value.scale < .5 || !auth.getToken()) return
             const rect = canvas.value.getBoundingClientRect(); let x: number, y: number
             if ('touches' in e && e.touches.length > 0) { x = (e.touches[0] as Touch).clientX; y = (e.touches[0] as Touch).clientY } 
             else if ('clientX' in e && 'clientY' in e) { x = e.clientX; y = e.clientY } 
             else return
             const screen = move.screen(x - rect.left, y - rect.top)
             const c = Math.floor(screen.x), r = Math.floor(screen.y)
-            if (c >= 0 && c < options.cols && r >= 0 && r < options.rows) { emits('select', state.value.selected as CanvasCoords); state.value.selected.x = c; state.value.selected.y = r } 
+            if (c >= 0 && c < options.cols && r >= 0 && r < options.rows) { 
+                emits('select', state.value.selected as CanvasCoords); 
+                state.value.selected.x = c; state.value.selected.y = r;
+                (async () => { try {
+                    const result = await useServer<{ data: CanvasState['ui']['current'] }>('canvas', { searchParams: { x: state.value.selected.x?.toString(), y: state.value.selected.y?.toString() } })
+                    if (result.error) return
+                    state.value.ui.current = result.data
+                } catch (e) { console.error(e) }})()
+            } 
             else { state.value.selected.x = null; state.value.selected.y = null }
         },
         apply: async () => {
-
+            if (!state.value.selected || state.value.selected.y === null || state.value.selected.x === null || !auth.getToken()) return
+            const i =  state.value.selected.y * options.cols + (state.value.selected.x + 1)
+            map.value[i] = state.value.ui.color
+            useServer<{ data: CanvasState['ui']['current'] } & CanvasCoords >('canvas', { method: 'post', json: { ...state.value.selected, color: state.value.ui.color } })
+            actions.clear()
         },
         clear: async () => state.value.selected = { x: null, y: null }
     }

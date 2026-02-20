@@ -54,13 +54,11 @@ func HandlePost(ctx *fiber.Ctx) error {
 
 	return ctx.JSON(fiber.Map{
 		"data": fiber.Map{
-			"user": fiber.Map{
-				"name":    pixel.UpdatedByUser.Name,
-				"updated": pixel.UpdatedByUser.UpdatedAt,
-			},
-			"x":     pixel.X,
-			"y":     pixel.Y,
-			"color": pixel.Color,
+			"user":    pixel.UpdatedByUser.Name,
+			"x":       pixel.X,
+			"y":       pixel.Y,
+			"color":   pixel.Color,
+			"updated": pixel.UpdatedAt,
 		},
 	})
 }

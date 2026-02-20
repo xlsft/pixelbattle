@@ -13,7 +13,6 @@ export function popup({ canvas, ctx, options, state, cache, width, height, cell,
         if (date >= subDays(now, 2) && date < subDays(now, 1)) return `Поставлен позавчера в ${format(date, 'HH:mm', { locale: ru })}`
         return `Поставлен ${formatRelative(date, now, { locale: ru })}`
     })(state.ui.current.updated) : ''
-    const status = state.ui.current.user?.online ? 'online' : 'offline'
 
     const sx = state.offset.x + state.selected.x * cell, sy = state.offset.y + state.selected.y * cell
     
@@ -30,11 +29,9 @@ export function popup({ canvas, ctx, options, state, cache, width, height, cell,
 
     ctx.font = style.font.title; ctx.textBaseline = 'top'; ctx.fillStyle = '#fff'
     const tx = px + style.padding + style.preview + style.padding, ty = py + style.padding
-    ctx.fillText(`${state.ui.current.user?.name}`.slice(0,15) ?? 'unknown', tx, ty + 3)
+    ctx.fillText(`${state.ui.current.user}`.slice(0,15) ?? 'unknown', tx, ty + 3)
 
     ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = style.font.subtitle
     ctx.fillText(updated, tx - 22, ty + style.line + 6)
 
-    ctx.font = style.font.title; ctx.fillStyle = state.ui.current.user?.online ? options.colors.map[4]?.background || options.colors.fg : options.colors.fg
-    ctx.fillText(status, px + width - style.padding - ctx.measureText(status).width, ty + 3)
 }

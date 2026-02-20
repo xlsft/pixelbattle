@@ -49,14 +49,10 @@ export type CanvasState = {
         current: {
             color: number
             updated: string
-            user: {
-                name: string
-                online: boolean | null
-            }
+            user: string
         } | null
     }
 }
-
 export type CanvasCoords<Nullable extends boolean = false> = Nullable extends true
   ? { x: number | null, y: number | null }
   : { x: number, y: number }

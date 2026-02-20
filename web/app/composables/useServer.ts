@@ -2,7 +2,7 @@ import { useUUID } from "@xlsft/nuxt";
 import ky, { type HTTPError, type Options as _Options } from "ky"
 import { useAuthStore } from "~/store/auth.store";
 
-export const useServer = async <ResponseData = unknown, Response = ResponseData>(
+export const useServer = async <ResponseData = unknown, Response = ResponseData & ResponseError>(
     endpoint: string,
     options?: RequestOptions
 ): Promise<Response> => {
