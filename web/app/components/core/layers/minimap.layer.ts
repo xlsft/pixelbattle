@@ -2,7 +2,7 @@ import { colors } from "../Canvas.config";
 
 export function minimap({ canvas, ctx, options, state, width, height, cell, map }: RenderContext) {
     if (window.innerWidth < 640) return
-    const style = { size: 150, padding: 24 }
+    const style = { size: 180, padding: 24 }
     const off = document.createElement('canvas'); off.width = options.cols; off.height = options.rows;
     const offCtx = off.getContext('2d')!;
     const image = offCtx.createImageData(options.cols, options.rows);
@@ -15,7 +15,7 @@ export function minimap({ canvas, ctx, options, state, width, height, cell, map 
     offCtx.putImageData(image, 0, 0);
 
     const x = canvas.width - style.size - style.padding, y = style.padding;
-    ctx.imageSmoothingEnabled = false; ctx.drawImage(off, x, y, style.size, style.size); 
+    ctx.imageSmoothingEnabled = true; ctx.drawImage(off, x, y, style.size, style.size); 
     ctx.strokeStyle = options.colors.border; ctx.lineWidth = .5; ctx.strokeRect(x, y, style.size, style.size);
 
     const sx = style.size / options.cols, sy = style.size / options.rows
