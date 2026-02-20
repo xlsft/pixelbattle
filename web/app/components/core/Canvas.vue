@@ -11,12 +11,14 @@
 
     const auth = useAuthStore()
 
-    if (tma.isTMA()) { 
+    const miniapp = tma.isTMA()
+    if (miniapp) { 
         tma.init()
         tma.addToHomeScreen()
         tma.swipeBehavior.mount()
         tma.swipeBehavior.enableVertical();
         tma.initData.restore()
+        tma.postEvent('web_app_request_fullscreen')
         const data = tma.initData.raw()
         if (!data) throw createError({ statusCode: 400, message: 'No init data provided' })
         auth.loginByInitData({ data })
@@ -270,7 +272,12 @@
 
         <pre class="absolute pointer-events-none text-[8px]! text-neutral-700! top-1.5 right-2">{{ fps }} fps</pre>
         <template v-if="auth.user?.id">
-            <div class="flex gap-4 absolute top-6 left-6 group">
+            <div 
+                class="flex gap-4 absolute top-[24px] left-[24px] group"
+                :class="[
+                    miniapp ? `top-[${tma.viewport.safeAreaInsetTop() + 24}px]!` : ''
+                ]"
+            >
                 <img :src="auth.user?.picture || '/placeholder.svg'" onerror="this.src = '/placeholder.svg'" class="min-h-[32px] min-w-[32px] h-[32px] w-[32px] bg-[#333333]">
                 <div class="flex flex-col justify-center">
                     <span class="text-sm! text-white leading-[14px]">{{ auth.user?.name || "Имя Фамилия" }}</span>
@@ -285,8 +292,11 @@
                 {{ (state.scale * 100).toFixed(0) }}%
             </div>
             <div 
-                class="max-sm:top-[24px]! max-sm:right-[24px] max-sm:left-auto h-[16px] bg-black border text-xs! text-white/50! px-[6px] absolute bottom-[24px] left-[24px] pointer-events-none duration-500" 
-                :class="state.ui.updating.pos && state.scale > .5 && ((state.hover.x != null && state.hover.y != null) || (state.selected.x != null && state.selected.y != null)) ? 'opacity-100' : 'opacity-0'"
+                class="max-sm:top-[24px] max-sm:right-[24px] max-sm:left-auto h-[16px] bg-black border text-xs! text-white/50! px-[6px] absolute bottom-[24px] left-[24px] pointer-events-none duration-500" 
+                :class="[
+                    state.ui.updating.pos && state.scale > .5 && ((state.hover.x != null && state.hover.y != null) || (state.selected.x != null && state.selected.y != null)) ? 'opacity-100' : 'opacity-0',
+                    miniapp ? `max-sm:top-[${tma.viewport.safeAreaInsetTop() + 24}px]!` : ''
+                ]"
             >
                 {{ (state.selected.x ?? state.hover.x ?? 0) + 1 }}x{{ (state.selected.y ?? state.hover.y ?? 0) + 1 }}
             </div>
@@ -295,7 +305,10 @@
                     bg-black p-[6px] max-sm:p-[12px] flex max-sm:flex-col gap-[6px] max-sm:gap-[12px] absolute border bottom-[24px] left-1/2 
                     -translate-x-1/2 max-sm:w-full max-sm:bottom-0 max-sm:border-none! max-sm:outline-1 outline-offset-[1px]
                 " 
-                :class="state.selected.x != null && state.selected.y != null && state.scale > .5 ? 'opacity-100 *:pointer-events-auto pointer-events-auto' : 'opacity-0 *:pointer-events-none pointer-events-none'"
+                :class="[
+                    state.selected.x != null && state.selected.y != null && state.scale > .5 ? 'opacity-100 *:pointer-events-auto pointer-events-auto' : 'opacity-0 *:pointer-events-none pointer-events-none',
+                    miniapp ? 'max-sm:pb-[24px]' : ''
+                ]"
             >
                 <div class="flex max-sm:flex-wrap w-full gap-[6px] max-sm:gap-[12px]">
                     <div
@@ -321,7 +334,7 @@
             </div>
         </template>
         <template v-else>
-            <TelegramAuthButton :id="7964362622" @data="async (data) => await auth.login(data)" v-if="!tma.isTMA()" class="absolute bottom-6 left-1/2 -translate-x-1/2"/>
+            <TelegramAuthButton :id="7964362622" @data="async (data) => await auth.login(data)" v-if="!miniapp" class="absolute bottom-6 left-1/2 -translate-x-1/2"/>
         </template>
         
         
