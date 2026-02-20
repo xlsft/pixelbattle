@@ -14,7 +14,7 @@ export function minimap({ canvas, ctx, options, state, width, height, cell, map 
     }
     offCtx.putImageData(image, 0, 0);
 
-    const x = canvas.width - style.size - style.padding, y = style.padding;
+    const x = canvas.width - style.size - style.padding, y = state.inset || style.padding;
     ctx.imageSmoothingEnabled = true; ctx.drawImage(off, x, y, style.size, style.size); 
     ctx.strokeStyle = options.colors.border; ctx.lineWidth = .5; ctx.strokeRect(x, y, style.size, style.size);
 

@@ -24,6 +24,7 @@ export type CanvasOptions = {
 }
 
 export type CanvasState = {
+    inset: number
     version: number
     scale: number
     panning: boolean

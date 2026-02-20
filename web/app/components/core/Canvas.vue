@@ -11,19 +11,6 @@
 
     const auth = useAuthStore()
 
-    const miniapp = tma.isTMA()
-    if (miniapp) { 
-        tma.init()
-        tma.addToHomeScreen()
-        tma.swipeBehavior.mount()
-        tma.swipeBehavior.enableVertical();
-        tma.initData.restore()
-        tma.postEvent('web_app_request_fullscreen')
-        const data = tma.initData.raw()
-        if (!data) throw createError({ statusCode: 400, message: 'No init data provided' })
-        auth.loginByInitData({ data })
-    }
-
     
     const emits = defineEmits<{ select: [coordinates: CanvasCoords] }>()
     const debouncer = useDebouncer(2000)
@@ -37,7 +24,7 @@
     const last = ref<CanvasCoords>({ x: 0, y: 0 })
     const map = ref<Uint8Array>(new Uint8Array(options.cols * options.rows))
     const state = ref<CanvasState>({
-        version: 0, scale: 1, panning: false, 
+        version: 0, scale: 1, panning: false, inset: 0,
         gif: { frames: [], frame: 0, delays: [], last: 0 },
         ui: { updating: { scale: false, pos: false }, color: 1, current: null },
         offset: { x: 0, y: 0 }, 
@@ -96,6 +83,7 @@
             canvas.value.width = Math.round(rect.width * dpr); canvas.value.height = Math.round(rect.height * dpr)
             canvas.value.style.width = rect.width + 'px'; canvas.value.style.height = rect.height + 'px'
             if (!ctx) ctx = canvas.value.getContext('2d'); if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+            if (tma.isTMA()) tma.postEvent('web_app_request_fullscreen')
         },
         drag: (e: MouseEvent) => {
             const rect = canvas.value!.getBoundingClientRect(), screen = move.screen(e.clientX - rect.left, e.clientY - rect.top)
@@ -207,6 +195,9 @@
             useServer<{ data: CanvasState['ui']['current'] } & CanvasCoords >('canvas', { method: 'post', json: { ...state.value.selected, color: state.value.ui.color } })
             if (clear) actions.clear()
             state.value.version++
+            if (tma.isTMA() && tma.hapticFeedback.isSupported()) {
+                tma.hapticFeedback.impactOccurred('heavy'); setTimeout(() => tma.hapticFeedback.impactOccurred('heavy'), 100)
+            }
         },
         clear: async () => state.value.selected = { x: null, y: null }
     }
@@ -246,6 +237,23 @@
             if (e.key === 'Backspace') { state.value.ui.color = 0; actions.apply(false) }
         })
     })
+
+    if (tma.isTMA()) { 
+        tma.init()
+        tma.addToHomeScreen()
+        tma.swipeBehavior.mount()
+        tma.swipeBehavior.enableVertical();
+        tma.initData.restore()
+        tma.viewport.mount()
+        tma.postEvent('web_app_request_fullscreen')
+        tma.on('content_safe_area_changed', (data) => { 
+            state.value.inset = data.top 
+        })
+        state.value.inset = tma.viewport.safeAreaInsets().top
+        const data = tma.initData.raw()
+        if (!data) throw createError({ statusCode: 400, message: 'No init data provided' })
+        auth.loginByInitData({ data })
+    }
 </script>
 
 
@@ -257,7 +265,7 @@
             </svg>
         </div>
     </Teleport>
-    <div @mouseleave="move.leave" class="w-full h-full bg-black">
+    <div @mouseleave="move.leave" class="w-full h-full bg-black" :style="`--ui-inset: ${state.inset || 24}px`">
         <canvas 
             ref="canvas" 
             class="block w-full h-full bg-black transition-opacity! duration-500!" 
@@ -273,17 +281,14 @@
         <pre class="absolute pointer-events-none text-[8px]! text-neutral-700! top-1.5 right-2">{{ fps }} fps</pre>
         <template v-if="auth.user?.id">
             <div 
-                class="flex gap-4 absolute top-[24px] left-[24px] group"
-                :class="[
-                    miniapp ? `top-[${tma.viewport.safeAreaInsetTop() + 24}px]!` : ''
-                ]"
+                class="flex gap-4 absolute left-[24px] group top-(--ui-inset) max-sm:top-[calc(var(--ui-inset)+24px)] max-sm:left-1/2 max-sm:-translate-x-1/2"
             >
                 <img :src="auth.user?.picture || '/placeholder.svg'" onerror="this.src = '/placeholder.svg'" class="min-h-[32px] min-w-[32px] h-[32px] w-[32px] bg-[#333333]">
                 <div class="flex flex-col justify-center">
                     <span class="text-sm! text-white leading-[14px]">{{ auth.user?.name || "Имя Фамилия" }}</span>
                     <span class="text-xs! text-neutral-700! leading-[12px]">@{{ auth.user?.nickname || "nickname" }}</span>
                 </div>
-                <button mini red class="w-[32px] flex justify-center max-sm:opacity-100 opacity-0 group-hover:opacity-100" title="Выход из аккаунта" @click="auth.logout">X</button>
+                <button mini red class="w-[32px] flex justify-center max-sm:opacity-100 opacity-0 group-hover:opacity-100" title="Выход из аккаунта" v-if="!tma.isTMA()" @click="auth.logout">X</button>
             </div>
             <div 
                 class="max-sm:hidden h-[16px] bg-black border text-xs! text-white/50! px-[6px] absolute bottom-[24px] right-[24px] pointer-events-none duration-500" 
@@ -292,10 +297,9 @@
                 {{ (state.scale * 100).toFixed(0) }}%
             </div>
             <div 
-                class="max-sm:top-[24px] max-sm:right-[24px] max-sm:left-auto h-[16px] bg-black border text-xs! text-white/50! px-[6px] absolute bottom-[24px] left-[24px] pointer-events-none duration-500" 
+                class="max-sm:top-(--ui-inset) max-sm:mt-[64px] max-sm:left-1/2 max-sm:-translate-x-1/2 max-sm:w-fit h-[16px] bg-black border text-xs! text-white/50! px-[6px] absolute bottom-[24px] left-[24px] pointer-events-none duration-500" 
                 :class="[
                     state.ui.updating.pos && state.scale > .5 && ((state.hover.x != null && state.hover.y != null) || (state.selected.x != null && state.selected.y != null)) ? 'opacity-100' : 'opacity-0',
-                    miniapp ? `max-sm:top-[${tma.viewport.safeAreaInsetTop() + 24}px]!` : ''
                 ]"
             >
                 {{ (state.selected.x ?? state.hover.x ?? 0) + 1 }}x{{ (state.selected.y ?? state.hover.y ?? 0) + 1 }}
@@ -307,7 +311,7 @@
                 " 
                 :class="[
                     state.selected.x != null && state.selected.y != null && state.scale > .5 ? 'opacity-100 *:pointer-events-auto pointer-events-auto' : 'opacity-0 *:pointer-events-none pointer-events-none',
-                    miniapp ? 'max-sm:pb-[24px]' : ''
+                    tma.isTMA() ? 'max-sm:pb-[24px]' : ''
                 ]"
             >
                 <div class="flex max-sm:flex-wrap w-full gap-[6px] max-sm:gap-[12px]">
@@ -320,7 +324,10 @@
                             data-[current=true]:opacity-100 data-[current=false]:opacity-25 max-sm:min-h-[32px] max-sm:min-w-[32px] max-sm:grow max-sm:w-[48px]
                             h-[24px] w-[24px] flex items-center justify-center text-[24px]! font-bold cursor-nw-resize! hover:opacity-50
                         " 
-                        @click="state.ui.color = i"    
+                        @click="() => {
+                            state.ui.color = i
+                            tma.hapticFeedback.impactOccurred('soft')
+                        }"    
                         @mouseleave="() => {
                             move.leave()
                             move.pan.end()
@@ -334,7 +341,7 @@
             </div>
         </template>
         <template v-else>
-            <TelegramAuthButton :id="7964362622" @data="async (data) => await auth.login(data)" v-if="!miniapp" class="absolute bottom-6 left-1/2 -translate-x-1/2"/>
+            <TelegramAuthButton :id="7964362622" @data="async (data) => await auth.login(data)" v-if="!tma.isTMA()" class="absolute bottom-6 left-1/2 -translate-x-1/2"/>
         </template>
         
         
