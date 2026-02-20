@@ -9,14 +9,14 @@ import (
 
 func DefineRouter(app *fiber.App) {
 
-	api := app.Group("/api")
+	api := app.Group("/api", middleware.CorsMiddleware)
 
 	auth := api.Group("/auth")
 	auth.Post("/", authRoutes.HandlePost)
-	auth.Get("/", middleware.AuthMiddleware(), authRoutes.HandleGet)
+	auth.Get("/", middleware.AuthMiddleware, authRoutes.HandleGet)
 
 	canvas := api.Group("/canvas")
-	canvas.Post("/", middleware.AuthMiddleware(), canvasRoutes.HandlePost)
+	canvas.Post("/", middleware.AuthMiddleware, canvasRoutes.HandlePost)
 	canvas.Get("/", canvasRoutes.HandleGet)
 	canvasRoutes.StartEventBroker()
 	canvas.Get("/events", canvasRoutes.HandleSSE)
