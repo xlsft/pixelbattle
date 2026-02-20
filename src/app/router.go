@@ -14,6 +14,7 @@ func DefineRouter(app *fiber.App) {
 
 	auth := api.Group("/auth")
 	auth.Post("/", authRoutes.HandlePost)
+	auth.Post("/initdata", authRoutes.HandleInitDataPost)
 	auth.Get("/", middleware.AuthMiddleware, authRoutes.HandleGet)
 
 	canvas := api.Group("/canvas")
