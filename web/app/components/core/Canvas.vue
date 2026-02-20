@@ -6,11 +6,11 @@
     import type { CanvasCoords, CanvasState } from '~~/shared/types/canvas.types';
     import { useAuthStore } from '~/store/auth.store';
     import TelegramAuthButton from '../auth/TelegramAuthButton.vue';
+    import { getUnpackedData } from './utils/getUnpackedData';
 
     const auth = useAuthStore()
 
     const emits = defineEmits<{ select: [coordinates: CanvasCoords] }>()
-    
     const debouncer = useDebouncer(2000)
     const canvas = ref<HTMLCanvasElement | null>(null); let ctx: CanvasRenderingContext2D | null = null
     const position = useCanvasPositionStore()
@@ -177,6 +177,16 @@
         clear: async () => state.value.selected = { x: null, y: null }
     }
 
+    const socket = useBinaryWebSocket('canvas/events')
+    const loading = ref(true)
+    socket.data((data) => {
+        for (const { x, y, c } of getUnpackedData(data)) {
+            if (x === null || y === null || c === null) continue
+            map.value[y * options.cols + x] = c
+        }; state.value.version++
+        loading.value = false
+    })
+
     usePureClick(canvas, actions.select)
     onMounted(async () => {
         window.addEventListener('resize', move.init)
@@ -201,11 +211,20 @@
             if (e.key === 'Enter' || e.key === ' ') actions.apply(false)
             if (e.key === 'Backspace') { state.value.ui.color = 0; actions.apply(false) }
         })
+
+
     })
 </script>
 
 
 <template>
+    <Teleport to="body">
+        <div class="w-dvw h-dvh absolute top-0 left-0 flex items-center justify-center transition-all" :class="loading ? 'backdrop-blur-sm' : 'pointer-events-none opacity-0'">
+            <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="animate-spin w-12 h-12">
+                <path d="M98 50C98 59.4935 95.1848 68.7738 89.9105 76.6674C84.6362 84.5609 77.1396 90.7132 68.3688 94.3462C59.5979 97.9792 49.9467 98.9298 40.6356 97.0777C31.3245 95.2256 22.7717 90.654 16.0588 83.9411C9.34592 77.2282 4.77437 68.6754 2.92229 59.3643C1.07021 50.0532 2.02079 40.402 5.65382 31.6311C9.28684 22.8603 15.4391 15.3637 23.3327 10.0894C31.2263 4.81511 40.5066 1.99998 50.0001 2" stroke="white" stroke-width="4"/>
+            </svg>
+        </div>
+    </Teleport>
     <div @mouseleave="move.leave" class="w-full h-full bg-black">
         <canvas 
             ref="canvas" 
@@ -218,11 +237,11 @@
             @touchmove.passive="move.touch.move" 
             @touchend="move.touch.end"
         />
-        
+
+        <pre class="absolute pointer-events-none text-[8px]! text-neutral-700! top-1.5 right-2">{{ fps }} fps</pre>
         <template v-if="auth.user?.id">
-            <pre class="absolute pointer-events-none text-[8px]! text-neutral-700! top-1.5 right-2">{{ fps }} fps</pre>
             <div class="flex gap-4 absolute top-6 left-6 group">
-                <img :src="auth.user?.picture || '/placeholder.svg'" onerror="this.src = '/placeholder.svg'" class="min-h-[32px] min-w-[32px] h-[32px] w-[32px]">
+                <img :src="auth.user?.picture || '/placeholder.svg'" onerror="this.src = '/placeholder.svg'" class="min-h-[32px] min-w-[32px] h-[32px] w-[32px] bg-[#333333]">
                 <div class="flex flex-col justify-center">
                     <span class="text-sm! text-white leading-[14px]">{{ auth.user?.name || "Имя Фамилия" }}</span>
                     <span class="text-xs! text-neutral-700! leading-[12px]">@{{ auth.user?.nickname || "nickname" }}</span>
