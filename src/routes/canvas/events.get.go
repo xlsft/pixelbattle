@@ -1,7 +1,6 @@
 package canvasRoutes
 
 import (
-	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -14,34 +13,9 @@ import (
 var (
 	events  = make([]PixelRequest, 0)
 	em      = &sync.Mutex{}
-	clients = make(map[*websocket.Conn]bool) // подключённые клиенты
+	clients = make(map[*websocket.Conn]bool)
 	cm      = &sync.Mutex{}
 )
-
-func StartEventLoop() {
-	go func() {
-		ticker := time.NewTicker(3 * time.Second)
-		defer ticker.Stop()
-		for range ticker.C {
-			em.Lock()
-			if len(events) == 0 {
-				em.Unlock()
-				continue
-			}
-
-			batch := events
-			events = nil
-			em.Unlock()
-
-			data := CompressEvents(batch)
-			cm.Lock()
-			for c := range clients {
-				_ = c.WriteMessage(websocket.BinaryMessage, data)
-			}
-			cm.Unlock()
-		}
-	}()
-}
 
 func PushEvents(data []PixelRequest) {
 	em.Lock()
@@ -68,28 +42,62 @@ func CompressEvents(data []PixelRequest) []byte {
 	return buffer
 }
 
-func HandleEventsWS(ctx *websocket.Conn) {
-	defer ctx.Close()
+func HandleEventsWS(c *websocket.Conn) {
+	cm.Lock()
+	clients[c] = true
+	cm.Unlock()
+
+	defer func() {
+		cm.Lock()
+		delete(clients, c)
+		cm.Unlock()
+		c.Close()
+	}()
 
 	db := database.UseDb()
-
 	var p []models.Pixel
-	if err := db.Model(&models.Pixel{}).Find(&p).Error; err != nil {
-		return
-	}
-
-	pixels := make([]PixelRequest, len(p))
-	for i, p := range p {
-		pixels[i] = PixelRequest{
-			X:     p.X,
-			Y:     p.Y,
-			Color: p.Color,
+	if err := db.Model(&models.Pixel{}).Find(&p).Error; err == nil {
+		pixels := make([]PixelRequest, len(p))
+		for i, px := range p {
+			pixels[i] = PixelRequest{
+				X:     px.X,
+				Y:     px.Y,
+				Color: px.Color,
+			}
 		}
+		data := CompressEvents(pixels)
+		_ = c.WriteMessage(websocket.BinaryMessage, data)
 	}
 
-	fmt.Println((CompressEvents(pixels)))
+	select {}
+}
 
-	if err := ctx.WriteMessage(websocket.BinaryMessage, CompressEvents(pixels)); err != nil {
-		return
-	}
+func StartEventLoop() {
+	go func() {
+		ticker := time.NewTicker(3 * time.Second)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			em.Lock()
+			if len(events) == 0 {
+				em.Unlock()
+				continue
+			}
+
+			batch := events
+			events = nil
+			em.Unlock()
+
+			data := CompressEvents(batch)
+
+			cm.Lock()
+			for c := range clients {
+				if err := c.WriteMessage(websocket.BinaryMessage, data); err != nil {
+					c.Close()
+					delete(clients, c)
+				}
+			}
+			cm.Unlock()
+		}
+	}()
 }
