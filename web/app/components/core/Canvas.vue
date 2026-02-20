@@ -158,6 +158,7 @@
             if (c >= 0 && c < options.cols && r >= 0 && r < options.rows) { 
                 emits('select', state.value.selected as CanvasCoords); 
                 state.value.selected.x = c; state.value.selected.y = r;
+                state.value.ui.current = null;
                 (async () => { const searchParams = { x: state.value.selected.x?.toString(), y: state.value.selected.y?.toString() }; try {
                     const result = await useServer<{ data: CanvasState['ui']['current'] }>('canvas', { searchParams })
                     if (result.error) return

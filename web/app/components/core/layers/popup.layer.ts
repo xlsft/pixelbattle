@@ -16,12 +16,12 @@ export function popup({ canvas, ctx, options, state, cache, width, height, cell,
 
     const sx = state.offset.x + state.selected.x * cell, sy = state.offset.y + state.selected.y * cell
     
-    let px = sx + cell + 8, py = sy - height - 8
+    let px = sx + cell + 8, py = sy - style.height - 8
     if (px + style.width > width - 8) px = sx - style.width - 8
     if (px < 8) px = 8; if (py < 8) py = sy + cell + 8
-    if (py + height > height - 8) py = height - style.height - 8
+    if (py + style.height > height - 8) py = height - style.height - 8
 
-    ctx.beginPath(); ctx.rect(px, py, width, height); ctx.fillStyle = options.colors.bg; ctx.fill()
+    ctx.beginPath(); ctx.rect(px, py, style.width, style.height); ctx.fillStyle = options.colors.bg; ctx.fill()
     ctx.lineWidth = 1; ctx.strokeStyle = options.colors.border; ctx.stroke()
 
     ctx.fillStyle = options.colors.map[state.ui.current.color as keyof typeof options.colors.map]?.background || options.colors.bg
