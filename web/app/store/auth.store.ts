@@ -29,6 +29,12 @@ export const useAuthStore = defineStore('Auth', () => {
             if (response.data.token) token.value = response.data.token
             return response
         },
+        loginByInitData: async (json: { data: string }) => {
+            const response = await useServer<{ data: { user?: UserModel, token: string }}>('auth/initdata', { method: 'post', json, auth: false })
+            if (response.data.user) user.value = response.data.user
+            if (response.data.token) token.value = response.data.token
+            return response
+        },
         logout: () => {
             token.value = undefined
             user.value = undefined

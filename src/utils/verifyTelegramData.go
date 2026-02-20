@@ -2,8 +2,10 @@ package utils
 
 import (
 	"os"
+	"time"
 
 	telegramloginwidget "github.com/LipsarHQ/go-telegram-login-widget"
+	initdata "github.com/telegram-mini-apps/init-data-golang"
 )
 
 type TelegramData struct {
@@ -28,4 +30,16 @@ func (data *TelegramData) VerifyTelegramData() error {
 	}
 
 	return auth.Check(os.Getenv("TG_TOKEN"))
+}
+
+type TelegramInitData struct {
+	Data string `json:"data"`
+}
+
+func (data *TelegramInitData) VerifyTelegramInitData() error {
+	return initdata.Validate(data.Data, os.Getenv("TG_TOKEN"), 24*time.Hour)
+}
+
+func (data *TelegramInitData) ParseTelegramInitData() (initdata.InitData, error) {
+	return initdata.Parse(data.Data)
 }

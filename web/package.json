@@ -14,6 +14,7 @@
     "@nuxt/scripts": "0.13.2",
     "@pinia/nuxt": "^0.11.3",
     "@tailwindcss/vite": "^4.2.0",
+    "@tma.js/sdk-vue": "^1.0.16",
     "@xlsft/nuxt": "jsr:^1.1.34",
     "date-fns": "^4.1.0",
     "gifuct-js": "^2.1.2",

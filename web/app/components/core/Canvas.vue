@@ -1,4 +1,5 @@
 <script setup lang="ts">
+    import * as tma from '@tma.js/sdk-vue';
     import { useDebouncer, usePureClick } from '@xlsft/nuxt'
     import { useCanvasPositionStore } from '~/store/canvasPosition.store';
     import { options, layers } from './Canvas.config';
@@ -10,6 +11,18 @@
 
     const auth = useAuthStore()
 
+    if (tma.isTMA()) { 
+        tma.init()
+        tma.addToHomeScreen()
+        tma.swipeBehavior.mount()
+        tma.swipeBehavior.enableVertical();
+        tma.initData.restore()
+        const data = tma.initData.raw()
+        if (!data) throw createError({ statusCode: 400, message: 'No init data provided' })
+        auth.loginByInitData({ data })
+    }
+
+    
     const emits = defineEmits<{ select: [coordinates: CanvasCoords] }>()
     const debouncer = useDebouncer(2000)
     const canvas = ref<HTMLCanvasElement | null>(null); let ctx: CanvasRenderingContext2D | null = null
@@ -230,8 +243,6 @@
             if (e.key === 'Enter' || e.key === ' ') actions.apply(false)
             if (e.key === 'Backspace') { state.value.ui.color = 0; actions.apply(false) }
         })
-
-
     })
 </script>
 
@@ -309,7 +320,10 @@
                 </div>
             </div>
         </template>
-        <TelegramAuthButton :id="7964362622" @data="async (data) => await auth.login(data)" v-else class="absolute bottom-6 left-1/2 -translate-x-1/2"/>
+        <template v-else>
+            <TelegramAuthButton :id="7964362622" @data="async (data) => await auth.login(data)" v-if="!tma.isTMA()" class="absolute bottom-6 left-1/2 -translate-x-1/2"/>
+        </template>
+        
         
     </div>
 </template>
