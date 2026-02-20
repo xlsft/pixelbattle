@@ -17,6 +17,7 @@ services:
     ports:
       - "5000:8000"
     environment: *default-environment
+    restart: always
     depends_on:
       db:
         condition: service_healthy
@@ -28,14 +29,16 @@ services:
     ports:
       - "5001:3000"
     environment: *default-environment
+    restart: always
     depends_on:
       - api
   db:
     container_name: db
     image: postgres:15
-    environment: *default-environment
     ports:
       - "5432:5432"
+    environment: *default-environment
+    restart: always
     volumes:
       - ./data:/var/lib/postgresql/data
     healthcheck:
