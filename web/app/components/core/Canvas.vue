@@ -264,16 +264,16 @@
                     <span class="text-sm! text-white leading-[14px]">{{ auth.user?.name || "Имя Фамилия" }}</span>
                     <span class="text-xs! text-neutral-700! leading-[12px]">@{{ auth.user?.nickname || "nickname" }}</span>
                 </div>
-                <button mini red class="w-[32px] flex justify-center opacity-0 group-hover:opacity-100" title="Выход из аккаунта" @click="auth.logout">X</button>
+                <button mini red class="w-[32px] flex justify-center max-sm:opacity-100 opacity-0 group-hover:opacity-100" title="Выход из аккаунта" @click="auth.logout">X</button>
             </div>
             <div 
-                class="max-sm:top-[24px]! h-[16px] bg-black border text-xs! text-white/50! px-[6px] absolute bottom-[24px] right-[24px] pointer-events-none duration-500" 
+                class="max-sm:hidden h-[16px] bg-black border text-xs! text-white/50! px-[6px] absolute bottom-[24px] right-[24px] pointer-events-none duration-500" 
                 :class="state.ui.updating.scale && state.scale > .5 ? 'opacity-100' : 'opacity-0'"
             >
                 {{ (state.scale * 100).toFixed(0) }}%
             </div>
             <div 
-                class="max-sm:top-[24px]! h-[16px] bg-black border text-xs! text-white/50! px-[6px] absolute bottom-[24px] left-[24px] pointer-events-none duration-500" 
+                class="max-sm:top-[24px]! max-sm:right-[24px] max-sm:left-auto h-[16px] bg-black border text-xs! text-white/50! px-[6px] absolute bottom-[24px] left-[24px] pointer-events-none duration-500" 
                 :class="state.ui.updating.pos && state.scale > .5 && ((state.hover.x != null && state.hover.y != null) || (state.selected.x != null && state.selected.y != null)) ? 'opacity-100' : 'opacity-0'"
             >
                 {{ (state.selected.x ?? state.hover.x ?? 0) + 1 }}x{{ (state.selected.y ?? state.hover.y ?? 0) + 1 }}
