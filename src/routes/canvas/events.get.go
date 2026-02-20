@@ -1,6 +1,7 @@
 package canvasRoutes
 
 import (
+	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -19,6 +20,7 @@ var (
 
 func PushEvents(data []PixelRequest) {
 	em.Lock()
+	fmt.Printf("Pushing %d events\n", data)
 	events = append(events, data...)
 	em.Unlock()
 }
@@ -40,6 +42,20 @@ func CompressEvents(data []PixelRequest) []byte {
 	}
 
 	return buffer
+}
+
+func DedupeEvents(data []PixelRequest) []PixelRequest {
+	unique := make(map[[2]int]PixelRequest)
+	for _, p := range data {
+		key := [2]int{int(p.X), int(p.Y)}
+		unique[key] = p
+	}
+
+	result := make([]PixelRequest, 0, len(unique))
+	for _, v := range unique {
+		result = append(result, v)
+	}
+	return result
 }
 
 func HandleEventsWS(c *websocket.Conn) {
@@ -84,7 +100,7 @@ func StartEventLoop() {
 				continue
 			}
 
-			batch := events
+			batch := DedupeEvents(events)
 			events = nil
 			em.Unlock()
 
