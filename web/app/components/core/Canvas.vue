@@ -158,11 +158,11 @@
             if (c >= 0 && c < options.cols && r >= 0 && r < options.rows) { 
                 emits('select', state.value.selected as CanvasCoords); 
                 state.value.selected.x = c; state.value.selected.y = r;
-                (async () => { try {
-                    const result = await useServer<{ data: CanvasState['ui']['current'] }>('canvas', { searchParams: { x: state.value.selected.x?.toString(), y: state.value.selected.y?.toString() } })
+                (async () => { const searchParams = { x: state.value.selected.x?.toString(), y: state.value.selected.y?.toString() }; try {
+                    const result = await useServer<{ data: CanvasState['ui']['current'] }>('canvas', { searchParams })
                     if (result.error) return
                     state.value.ui.current = result.data
-                } catch (e) { console.error(e) }})()
+                } catch (e) { console.warn('Pixel not found', searchParams) }})()
             } 
             else { state.value.selected.x = null; state.value.selected.y = null }
         },
