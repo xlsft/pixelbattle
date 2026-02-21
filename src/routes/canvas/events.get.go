@@ -90,7 +90,7 @@ func HandleEventsWS(c *websocket.Conn) {
 
 func StartEventLoop() {
 	go func() {
-		ticker := time.NewTicker(3 * time.Second)
+		ticker := time.NewTicker(10 * time.Millisecond)
 		defer ticker.Stop()
 
 		for range ticker.C {
