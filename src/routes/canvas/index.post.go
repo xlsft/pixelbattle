@@ -20,12 +20,13 @@ func HandlePost(ctx *fiber.Ctx) error {
 	request := PixelRequest{}
 
 	var pixel models.Pixel
+	whereByCoords := "x = ? AND y = ?"
 
 	if err := ctx.BodyParser(&request); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(utils.DefineError(err.Error()))
 	}
 
-	if err := db.Model(&models.Pixel{}).Preload("UpdatedByUser").Where(&models.Pixel{X: request.X, Y: request.Y}).First(&pixel).Error; err != nil {
+	if err := db.Model(&models.Pixel{}).Where(whereByCoords, request.X, request.Y).First(&pixel).Error; err != nil {
 		if err != gorm.ErrRecordNotFound {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(utils.DefineError("Database error"))
 		}
@@ -41,9 +42,18 @@ func HandlePost(ctx *fiber.Ctx) error {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(utils.DefineError("Failed to draw a pixel"))
 		}
 	} else {
-		if tx := db.Model(&models.Pixel{}).Where(&pixel).Updates(models.Pixel{Color: request.Color, User: user.UUID}); tx.Error != nil {
+		if tx := db.Model(&models.Pixel{}).
+			Where(whereByCoords, request.X, request.Y).
+			Updates(map[string]any{
+				"color": request.Color,
+				"user":  user.UUID,
+			}); tx.Error != nil {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(utils.DefineError("Failed to update a pixel"))
 		}
+	}
+
+	if err := db.Model(&models.Pixel{}).Where(whereByCoords, request.X, request.Y).First(&pixel).Error; err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(utils.DefineError("Failed to load updated pixel"))
 	}
 
 	PushEvents([]PixelRequest{{

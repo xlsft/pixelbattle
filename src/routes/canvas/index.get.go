@@ -23,7 +23,10 @@ func HandleGet(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(utils.DefineError(err.Error()))
 	}
 
-	if err := db.Model(&models.Pixel{}).Preload("UpdatedByUser").Where(&models.Pixel{X: request.X, Y: request.Y}).First(&pixel).Error; err != nil {
+	if err := db.Model(&models.Pixel{}).
+		Preload("UpdatedByUser").
+		Where("x = ? AND y = ?", request.X, request.Y).
+		First(&pixel).Error; err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(utils.DefineError("Pixel not found"))
 	}
 
